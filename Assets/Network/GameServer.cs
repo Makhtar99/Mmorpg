@@ -129,6 +129,7 @@ public class GameServer : MonoBehaviour
                 c.State.Character = r.ReadByte();
                 SendWelcome(c);
                 SendExistingPlayersTo(c);
+                SendBonusState(c);
                 BroadcastSpawn(c.State);
                 break;
 
@@ -179,6 +180,15 @@ public class GameServer : MonoBehaviour
     {
         PacketWriter w = new PacketWriter(MessageType.Welcome);
         w.WriteInt(c.Id);
+        SendTcp(c, w.ToBytes());
+    }
+
+    private void SendBonusState(Client c)
+    {
+        PacketWriter w = new PacketWriter(MessageType.BonusState);
+        w.WriteInt(_takenBonuses.Count);
+        foreach (int bonusId in _takenBonuses)
+            w.WriteInt(bonusId);
         SendTcp(c, w.ToBytes());
     }
 

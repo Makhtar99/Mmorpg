@@ -112,6 +112,13 @@ public class TestClient : MonoBehaviour
                 Debug.Log("Despawn player " + r.ReadInt());
                 break;
 
+            case MessageType.BonusState:
+                int taken = r.ReadInt();
+                string ids = "";
+                for (int i = 0; i < taken; i++) ids += r.ReadInt() + " ";
+                Debug.Log("BonusState: " + taken + " bonus already taken [ " + ids + "]");
+                break;
+
             case MessageType.PickupAck:
                 int bonus = r.ReadInt();
                 int who = r.ReadInt();
