@@ -1,0 +1,149 @@
+using System.IO;
+using System.Text;
+using UnityEngine;
+
+public enum MessageType : byte
+{
+    Connect       = 1,
+    Welcome       = 2,
+    Spawn         = 3,
+    Despawn       = 4,
+    Move          = 5,
+    Snapshot      = 6,
+    PickupRequest = 7,
+    PickupAck     = 8,
+}
+
+public struct PlayerState
+{
+    public int Id;
+    public byte Character;
+    public Vector3 Position;
+    public float Yaw;
+}
+
+public class PacketWriter
+{
+    public const int HeaderSize = 5;
+
+    private readonly MemoryStream _stream;
+    private readonly BinaryWriter _writer;
+    private readonly MessageType _type;
+    private readonly ushort _seq;
+
+    public PacketWriter(MessageType type, ushort seq = 0)
+    {
+        _type = type;
+        _seq = seq;
+        _stream = new MemoryStream();
+        _writer = new BinaryWriter(_stream);
+    }
+
+    public void WriteByte(byte value)   => _writer.Write(value);
+    public void WriteInt(int value)     => _writer.Write(value);
+    public void WriteFloat(float value) => _writer.Write(value);
+
+    public void WriteVector3(Vector3 v)
+    {
+        _writer.Write(v.x);
+        _writer.Write(v.y);
+        _writer.Write(v.z);
+    }
+
+    public void WriteQuaternion(Quaternion q)
+    {
+        _writer.Write(q.x);
+        _writer.Write(q.y);
+        _writer.Write(q.z);
+        _writer.Write(q.w);
+    }
+
+    public void WriteString(string s)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(s ?? "");
+        _writer.Write((ushort)bytes.Length);
+        _writer.Write(bytes);
+    }
+
+    public void WritePlayerState(PlayerState p)
+    {
+        WriteInt(p.Id);
+        WriteByte(p.Character);
+        WriteVector3(p.Position);
+        WriteFloat(p.Yaw);
+    }
+
+    public byte[] ToBytes()
+    {
+        byte[] payload = _stream.ToArray();
+        byte[] packet = new byte[HeaderSize + payload.Length];
+
+        packet[0] = (byte)_type;
+        packet[1] = (byte)(_seq & 0xFF);
+        packet[2] = (byte)((_seq >> 8) & 0xFF);
+        ushort len = (ushort)payload.Length;
+        packet[3] = (byte)(len & 0xFF);
+        packet[4] = (byte)((len >> 8) & 0xFF);
+
+        System.Array.Copy(payload, 0, packet, HeaderSize, payload.Length);
+        return packet;
+    }
+}
+
+public class PacketReader
+{
+    public MessageType Type { get; private set; }
+    public ushort Seq { get; private set; }
+    public ushort PayloadLength { get; private set; }
+
+    private readonly BinaryReader _reader;
+
+    public PacketReader(byte[] data)
+    {
+        var stream = new MemoryStream(data);
+        _reader = new BinaryReader(stream);
+
+        Type = (MessageType)_reader.ReadByte();
+        Seq = _reader.ReadUInt16();
+        PayloadLength = _reader.ReadUInt16();
+    }
+
+    public byte ReadByte()   => _reader.ReadByte();
+    public int ReadInt()     => _reader.ReadInt32();
+    public float ReadFloat() => _reader.ReadSingle();
+
+    public Vector3 ReadVector3()
+    {
+        float x = _reader.ReadSingle();
+        float y = _reader.ReadSingle();
+        float z = _reader.ReadSingle();
+        return new Vector3(x, y, z);
+    }
+
+    public Quaternion ReadQuaternion()
+    {
+        float x = _reader.ReadSingle();
+        float y = _reader.ReadSingle();
+        float z = _reader.ReadSingle();
+        float w = _reader.ReadSingle();
+        return new Quaternion(x, y, z, w);
+    }
+
+    public string ReadString()
+    {
+        ushort length = _reader.ReadUInt16();
+        byte[] bytes = _reader.ReadBytes(length);
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    public PlayerState ReadPlayerState()
+    {
+        return new PlayerState
+        {
+            Id = ReadInt(),
+            Character = ReadByte(),
+            Position = ReadVector3(),
+            Yaw = ReadFloat(),
+        };
+    }
+}
