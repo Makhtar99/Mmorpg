@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -145,5 +146,29 @@ public class PacketReader
             Position = ReadVector3(),
             Yaw = ReadFloat(),
         };
+    }
+}
+
+public class PacketFramer
+{
+    private readonly List<byte> _buffer = new List<byte>();
+
+    public void Push(byte[] data, int count)
+    {
+        for (int i = 0; i < count; i++) _buffer.Add(data[i]);
+    }
+
+    public bool TryRead(out byte[] packet)
+    {
+        packet = null;
+        if (_buffer.Count < PacketWriter.HeaderSize) return false;
+
+        int len = _buffer[3] | (_buffer[4] << 8);
+        int total = PacketWriter.HeaderSize + len;
+        if (_buffer.Count < total) return false;
+
+        packet = _buffer.GetRange(0, total).ToArray();
+        _buffer.RemoveRange(0, total);
+        return true;
     }
 }
