@@ -7,6 +7,7 @@ public class GameServer : MonoBehaviour
 {
     public int Port = 25000;
     public float SnapshotsPerSecond = 20f;
+    public int FullSnapshotEvery = 30;
 
     private class Client
     {
@@ -15,6 +16,8 @@ public class GameServer : MonoBehaviour
         public NetworkStream Stream;
         public IPEndPoint UdpEndpoint;
         public PlayerState State;
+        public PlayerState LastSent;
+        public bool EverSent;
         public int Score;
         public readonly PacketFramer Framer = new PacketFramer();
     }
@@ -28,6 +31,7 @@ public class GameServer : MonoBehaviour
 
     private int _nextId = 1;
     private float _snapshotTimer;
+    private int _snapshotCounter;
 
     void Start()
     {
@@ -216,10 +220,30 @@ public class GameServer : MonoBehaviour
     {
         if (_clients.Count == 0) return;
 
-        PacketWriter w = new PacketWriter(MessageType.Snapshot);
-        w.WriteInt(_clients.Count);
+        _snapshotCounter++;
+        bool keyframe = (_snapshotCounter % FullSnapshotEvery) == 0;
+
+        List<Client> toSend = new List<Client>();
         foreach (Client c in _clients.Values)
-            w.WritePlayerState(c.State);
+        {
+            if (keyframe || HasMoved(c))
+            {
+                toSend.Add(c);
+                c.LastSent = c.State;
+                c.EverSent = true;
+            }
+        }
+
+        if (toSend.Count == 0) return;
+
+        PacketWriter w = new PacketWriter(MessageType.Snapshot);
+        w.WriteInt(toSend.Count);
+        foreach (Client c in toSend)
+        {
+            w.WriteInt(c.State.Id);
+            w.WritePositionQuantized(c.State.Position);
+            w.WriteYawQuantized(c.State.Yaw);
+        }
         byte[] bytes = w.ToBytes();
 
         foreach (Client c in _clients.Values)
@@ -228,6 +252,14 @@ public class GameServer : MonoBehaviour
             try { _udp.Send(bytes, bytes.Length, c.UdpEndpoint); }
             catch (SocketException e) { Debug.LogWarning(e.Message); }
         }
+    }
+
+    private bool HasMoved(Client c)
+    {
+        if (!c.EverSent) return true;
+        bool posChanged = (c.State.Position - c.LastSent.Position).sqrMagnitude > 0.0001f;
+        bool yawChanged = Mathf.Abs(Mathf.DeltaAngle(c.State.Yaw, c.LastSent.Yaw)) > 1f;
+        return posChanged || yawChanged;
     }
 
     private void RemoveClient(int id)

@@ -143,8 +143,10 @@ public class TestClient : MonoBehaviour
                 string line = "Snapshot (" + count + " players): ";
                 for (int i = 0; i < count; i++)
                 {
-                    PlayerState p = r.ReadPlayerState();
-                    line += "[" + p.Id + " @ " + p.Position.ToString("F1") + "] ";
+                    int id = r.ReadInt();
+                    Vector3 pos = r.ReadPositionQuantized();
+                    float yaw = r.ReadYawQuantized();
+                    line += "[" + id + " @ " + pos.ToString("F1") + " yaw " + yaw.ToString("F0") + "] ";
                 }
                 Debug.Log(line);
             }

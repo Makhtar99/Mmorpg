@@ -75,6 +75,23 @@ public class PacketWriter
         WriteFloat(p.Yaw);
     }
 
+    public void WritePositionQuantized(Vector3 v)
+    {
+        _writer.Write(Quantize(v.x));
+        _writer.Write(Quantize(v.y));
+        _writer.Write(Quantize(v.z));
+    }
+
+    public void WriteYawQuantized(float yaw)
+    {
+        _writer.Write((byte)(Mathf.Repeat(yaw, 360f) / 360f * 256f));
+    }
+
+    private static short Quantize(float v)
+    {
+        return (short)Mathf.Clamp(Mathf.Round(v * 100f), short.MinValue, short.MaxValue);
+    }
+
     public byte[] ToBytes()
     {
         byte[] payload = _stream.ToArray();
@@ -147,6 +164,19 @@ public class PacketReader
             Position = ReadVector3(),
             Yaw = ReadFloat(),
         };
+    }
+
+    public Vector3 ReadPositionQuantized()
+    {
+        float x = _reader.ReadInt16() / 100f;
+        float y = _reader.ReadInt16() / 100f;
+        float z = _reader.ReadInt16() / 100f;
+        return new Vector3(x, y, z);
+    }
+
+    public float ReadYawQuantized()
+    {
+        return _reader.ReadByte() / 256f * 360f;
     }
 }
 
