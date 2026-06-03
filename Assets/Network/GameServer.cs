@@ -8,6 +8,7 @@ public class GameServer : MonoBehaviour
     public int Port = 25000;
     public float SnapshotsPerSecond = 20f;
     public int FullSnapshotEvery = 30;
+    public bool AutoStart = false;
 
     private class Client
     {
@@ -33,21 +34,42 @@ public class GameServer : MonoBehaviour
     private float _snapshotTimer;
     private int _snapshotCounter;
 
-    void Start()
+    public bool IsRunning => _tcpListener != null;
+
+    void Awake()
     {
-        _tcpListener = new TcpListener(IPAddress.Any, Port);
-        _tcpListener.Start();
+        if (AutoStart) StartServer();
+    }
 
-        _udp = new UdpClient();
-        _udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-        _udp.ExclusiveAddressUse = false;
-        _udp.Client.Bind(new IPEndPoint(IPAddress.Any, Port));
+    public bool StartServer()
+    {
+        if (IsRunning) return true;
 
-        Debug.Log("Server started on port " + Port);
+        try
+        {
+            _tcpListener = new TcpListener(IPAddress.Any, Port);
+            _tcpListener.Start();
+
+            _udp = new UdpClient();
+            _udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            _udp.ExclusiveAddressUse = false;
+            _udp.Client.Bind(new IPEndPoint(IPAddress.Any, Port));
+
+            Debug.Log("Server started on port " + Port);
+            return true;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError("Could not start server: " + ex.Message);
+            if (_tcpListener != null) { _tcpListener.Stop(); _tcpListener = null; }
+            if (_udp != null) { _udp.Close(); _udp = null; }
+            return false;
+        }
     }
 
     void Update()
     {
+        if (!IsRunning) return;
         AcceptConnections();
         ReceiveTcp();
         ReceiveUdp();
