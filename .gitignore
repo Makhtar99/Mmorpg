@@ -1,0 +1,16 @@
+/.vscode/
+/Library/
+/obj/
+*.csproj
+*.sln
+*.slnx
+/Temp/
+/.vs/
+/Log/
+/Logs/
+/Build/
+*.0.2.zip
+*.zip
+/UserSettings/
+/.idea/
+.DS_Store
