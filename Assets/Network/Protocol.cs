@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -12,6 +13,7 @@ public enum MessageType : byte
     Snapshot      = 6,
     PickupRequest = 7,
     PickupAck     = 8,
+    BonusState    = 9,
 }
 
 public struct PlayerState
@@ -71,6 +73,23 @@ public class PacketWriter
         WriteByte(p.Character);
         WriteVector3(p.Position);
         WriteFloat(p.Yaw);
+    }
+
+    public void WritePositionQuantized(Vector3 v)
+    {
+        _writer.Write(Quantize(v.x));
+        _writer.Write(Quantize(v.y));
+        _writer.Write(Quantize(v.z));
+    }
+
+    public void WriteYawQuantized(float yaw)
+    {
+        _writer.Write((byte)(Mathf.Repeat(yaw, 360f) / 360f * 256f));
+    }
+
+    private static short Quantize(float v)
+    {
+        return (short)Mathf.Clamp(Mathf.Round(v * 100f), short.MinValue, short.MaxValue);
     }
 
     public byte[] ToBytes()
@@ -145,5 +164,42 @@ public class PacketReader
             Position = ReadVector3(),
             Yaw = ReadFloat(),
         };
+    }
+
+    public Vector3 ReadPositionQuantized()
+    {
+        float x = _reader.ReadInt16() / 100f;
+        float y = _reader.ReadInt16() / 100f;
+        float z = _reader.ReadInt16() / 100f;
+        return new Vector3(x, y, z);
+    }
+
+    public float ReadYawQuantized()
+    {
+        return _reader.ReadByte() / 256f * 360f;
+    }
+}
+
+public class PacketFramer
+{
+    private readonly List<byte> _buffer = new List<byte>();
+
+    public void Push(byte[] data, int count)
+    {
+        for (int i = 0; i < count; i++) _buffer.Add(data[i]);
+    }
+
+    public bool TryRead(out byte[] packet)
+    {
+        packet = null;
+        if (_buffer.Count < PacketWriter.HeaderSize) return false;
+
+        int len = _buffer[3] | (_buffer[4] << 8);
+        int total = PacketWriter.HeaderSize + len;
+        if (_buffer.Count < total) return false;
+
+        packet = _buffer.GetRange(0, total).ToArray();
+        _buffer.RemoveRange(0, total);
+        return true;
     }
 }
