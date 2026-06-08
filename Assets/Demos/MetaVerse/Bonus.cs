@@ -2,19 +2,14 @@ using UnityEngine;
 
 public class Bonus : MonoBehaviour
 {
+    public int BonusId;
     public LayerMask CollisionLayers;
     public int Points = 1;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        if (GameClient.Instance != null)
+            GameClient.Instance.RegisterBonus(this);
     }
 
     private bool ShouldHandleObject(Collider other) {
@@ -24,11 +19,9 @@ public class Bonus : MonoBehaviour
     void OnTriggerEnter(Collider other) {
       if (!ShouldHandleObject(other)) { return; }
 
-      CharacterScore cScore = other.gameObject.GetComponentInChildren<CharacterScore>();
-      if (cScore != null) {
-        cScore.AddScore(Points);
-      }
+      NetworkPlayer player = other.GetComponentInParent<NetworkPlayer>();
+      if (player == null || !player.IsLocal) { return; }
 
-      Destroy(gameObject);
+      GameClient.Instance.SendPickupRequest(BonusId);
     }
 }
