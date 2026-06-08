@@ -41,7 +41,6 @@ public class Bird : MonoBehaviour
 			{
 				anim.SetInteger("AnimNum", Random.Range(0, animCount+1));
 				canChangeAnim = false;
-				Debug.Log("Bird anim: " + anim.GetInteger("AnimNum"));
 			}
 		}
 		else
