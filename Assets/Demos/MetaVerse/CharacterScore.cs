@@ -21,4 +21,9 @@ public class CharacterScore : MonoBehaviour
       Score += points;
       TxtScore.text = Score.ToString();
     }
+
+    public void SetScore(int value) {
+      Score = value;
+      if (TxtScore != null) TxtScore.text = Score.ToString();
+    }
 }
