@@ -6,7 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Scenes/GameMenu.unity
+    guid: d64940bd595b4a7bba198b1c7fb19b57
+  - enabled: 1
+    path: Assets/Demos/MetaVerse/MetaVerse.unity
+    guid: 457b0a6d789c6b643a5d3a6a830f124c
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

@@ -189,6 +189,11 @@ public class PacketFramer
         for (int i = 0; i < count; i++) _buffer.Add(data[i]);
     }
 
+    public void Clear()
+    {
+        _buffer.Clear();
+    }
+
     public bool TryRead(out byte[] packet)
     {
         packet = null;

@@ -8076,10 +8076,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NetworkLauncher
   Server: {fileID: 1816197936}
   Client: {fileID: 1580255393}
-  ShowOnGuiMenu: 1
+  ShowOnGuiMenu: 0
   IpInput: {fileID: 1820072610}
   StatusText: {fileID: 0}
   MenuPanel: {fileID: 0}
+  GameMenuSceneName: GameMenu
+  LoadGameMenuOnLeave: 1
+  AutoStartPendingSession: 1
 --- !u!1001 &131247204
 PrefabInstance:
   m_ObjectHideFlags: 0
