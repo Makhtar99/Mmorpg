@@ -110,7 +110,14 @@ public class GameServer : MonoBehaviour
                 Id = id,
                 Tcp = tcp,
                 Stream = tcp.GetStream(),
-                State = new PlayerState { Id = id, Character = 0, Position = SpawnPosition(id), Yaw = 0f },
+                State = new PlayerState
+                {
+                    Id = id,
+                    Character = 0,
+                    PlayerName = PlayerNames.DefaultName,
+                    Position = SpawnPosition(id),
+                    Yaw = 0f,
+                },
             };
             _clients.Add(id, c);
             Debug.Log("Client connected, assigned id " + id);
@@ -187,6 +194,7 @@ public class GameServer : MonoBehaviour
         {
             case MessageType.Connect:
                 c.State.Character = r.ReadByte();
+                c.State.PlayerName = PlayerNames.Normalize(r.ReadString());
                 SendWelcome(c);
                 SendExistingPlayersTo(c);
                 SendBonusState(c);

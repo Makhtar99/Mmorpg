@@ -11,6 +11,7 @@ public class GameClient : MonoBehaviour
     public string ServerIp = "127.0.0.1";
     public int Port = 25000;
     public byte Character = 0;
+    public string PlayerName = PlayerNames.DefaultName;
     public bool ConnectOnStart = true;
 
     public GameObject[] CharacterPrefabs;
@@ -67,6 +68,7 @@ public class GameClient : MonoBehaviour
 
             PacketWriter w = new PacketWriter(MessageType.Connect);
             w.WriteByte(Character);
+            w.WriteString(PlayerNames.Normalize(PlayerName));
             SendTcp(w.ToBytes());
 
             _connected = true;
@@ -235,6 +237,7 @@ public class GameClient : MonoBehaviour
         _localPlayer = go.GetComponent<NetworkPlayer>();
         if (_localPlayer == null) _localPlayer = go.AddComponent<NetworkPlayer>();
         _localPlayer.InitLocal(_myId, this);
+        ApplyPlayerName(_localPlayer, PlayerName);
 
         PointCameraAt(go.transform);
     }
@@ -262,8 +265,25 @@ public class GameClient : MonoBehaviour
         NetworkPlayer np = go.GetComponent<NetworkPlayer>();
         if (np == null) np = go.AddComponent<NetworkPlayer>();
         np.InitRemote(s.Id, s.Position, s.Yaw);
+        ApplyPlayerName(np, s.PlayerName);
 
         _remotePlayers[s.Id] = np;
+    }
+
+    private static void ApplyPlayerName(NetworkPlayer player, string playerName)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        CharacterScore score = player.GetComponentInChildren<CharacterScore>();
+        if (score == null)
+        {
+            score = player.gameObject.AddComponent<CharacterScore>();
+        }
+
+        score.SetPlayerName(playerName);
     }
 
     private void RemovePlayer(int id)
