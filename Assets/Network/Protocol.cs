@@ -20,8 +20,21 @@ public struct PlayerState
 {
     public int Id;
     public byte Character;
+    public string PlayerName;
     public Vector3 Position;
     public float Yaw;
+}
+
+public static class PlayerNames
+{
+    public const string DefaultName = "Player";
+    public const int MaxLength = 16;
+
+    public static string Normalize(string playerName)
+    {
+        string normalized = string.IsNullOrWhiteSpace(playerName) ? DefaultName : playerName.Trim();
+        return normalized.Length <= MaxLength ? normalized : normalized.Substring(0, MaxLength);
+    }
 }
 
 public class PacketWriter
@@ -71,6 +84,7 @@ public class PacketWriter
     {
         WriteInt(p.Id);
         WriteByte(p.Character);
+        WriteString(PlayerNames.Normalize(p.PlayerName));
         WriteVector3(p.Position);
         WriteFloat(p.Yaw);
     }
@@ -161,6 +175,7 @@ public class PacketReader
         {
             Id = ReadInt(),
             Character = ReadByte(),
+            PlayerName = PlayerNames.Normalize(ReadString()),
             Position = ReadVector3(),
             Yaw = ReadFloat(),
         };

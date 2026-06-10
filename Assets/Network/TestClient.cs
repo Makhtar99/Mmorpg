@@ -7,6 +7,7 @@ public class TestClient : MonoBehaviour
     public string ServerIp = "127.0.0.1";
     public int Port = 25000;
     public byte Character = 0;
+    public string PlayerName = "TestClient";
     public float MovesPerSecond = 10f;
 
     private TcpClient _tcp;
@@ -35,6 +36,7 @@ public class TestClient : MonoBehaviour
 
             PacketWriter w = new PacketWriter(MessageType.Connect);
             w.WriteByte(Character);
+            w.WriteString(PlayerName);
             SendTcp(w.ToBytes());
 
             Debug.Log("TestClient connected to " + ServerIp + ":" + Port);

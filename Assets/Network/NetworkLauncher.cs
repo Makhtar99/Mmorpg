@@ -149,7 +149,7 @@ public class NetworkLauncher : MonoBehaviour
             return;
         }
 
-        _ip = request.ServerIp;
+        ApplySessionRequest(request);
 
         if (request.Mode == NetworkSessionMode.Host)
         {
@@ -160,6 +160,18 @@ public class NetworkLauncher : MonoBehaviour
         if (request.Mode == NetworkSessionMode.Join)
         {
             Join(request.ServerIp);
+        }
+    }
+
+    public void ApplySessionRequest(NetworkSessionRequestData request)
+    {
+        _ip = request.ServerIp;
+
+        if (Client != null)
+        {
+            Client.ServerIp = request.ServerIp;
+            Client.Character = request.Character;
+            Client.PlayerName = request.PlayerName;
         }
     }
 

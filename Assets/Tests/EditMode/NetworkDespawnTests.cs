@@ -20,6 +20,9 @@ public class NetworkDespawnTests
     static readonly MethodInfo ClientHandleTcp =
         typeof(GameClient).GetMethod("HandleTcp", BindingFlags.Instance | BindingFlags.NonPublic);
 
+    static readonly MethodInfo GameMenuStart =
+        typeof(GameMenu).GetMethod("Start", BindingFlags.Instance | BindingFlags.NonPublic);
+
     GameObject serverObject;
     GameObject clientObject;
     GameObject launcherObject;
@@ -84,6 +87,22 @@ public class NetworkDespawnTests
         Assert.That(client.RemotePlayerCount, Is.EqualTo(0));
         Assert.That(client.HasRemotePlayer(7), Is.False);
         Assert.That(remote == null, Is.True);
+    }
+
+    [Test]
+    public void GameClient_SetsRemotePlayerNameWhenSpawnArrives()
+    {
+        GameClient client = CreateGameClientWithPrefab();
+
+        InvokeClientPacket(client, SpawnPacket(playerId: 7, character: 0, playerName: "Samy"));
+
+        NetworkPlayer remote = client.GetRemotePlayer(7);
+        CharacterScore score = remote.GetComponentInChildren<CharacterScore>();
+
+        Assert.That(score, Is.Not.Null);
+        Assert.That(score.PlayerName, Is.EqualTo("Samy"));
+        Assert.That(score.TxtName, Is.Not.Null);
+        Assert.That(score.TxtName.text, Is.EqualTo("Samy"));
     }
 
     [Test]
@@ -191,11 +210,15 @@ public class NetworkDespawnTests
         GameMenu menu = menuObject.AddComponent<GameMenu>();
         menu.GameSceneName = "MetaVerse";
         menu.ServerIp = "192.168.1.42";
+        menu.SelectedCharacter = 2;
+        menu.PlayerName = "Samy";
 
         menu.Join();
 
         Assert.That(NetworkSessionRequest.Current.Mode, Is.EqualTo(NetworkSessionMode.Join));
         Assert.That(NetworkSessionRequest.Current.ServerIp, Is.EqualTo("192.168.1.42"));
+        Assert.That(NetworkSessionRequest.Current.Character, Is.EqualTo((byte)2));
+        Assert.That(NetworkSessionRequest.Current.PlayerName, Is.EqualTo("Samy"));
         Assert.That(loadedScene, Is.EqualTo("MetaVerse"));
     }
 
@@ -208,12 +231,183 @@ public class NetworkDespawnTests
 
         GameMenu menu = menuObject.AddComponent<GameMenu>();
         menu.GameSceneName = "MetaVerse";
+        menu.SelectedCharacter = 4;
+        menu.PlayerName = "HostName";
 
         menu.Host();
 
         Assert.That(NetworkSessionRequest.Current.Mode, Is.EqualTo(NetworkSessionMode.Host));
         Assert.That(NetworkSessionRequest.Current.ServerIp, Is.EqualTo("127.0.0.1"));
+        Assert.That(NetworkSessionRequest.Current.Character, Is.EqualTo((byte)4));
+        Assert.That(NetworkSessionRequest.Current.PlayerName, Is.EqualTo("HostName"));
         Assert.That(loadedScene, Is.EqualTo("MetaVerse"));
+    }
+
+    [Test]
+    public void NetworkSessionRequest_StoresSelectedCharacterAndPlayerNameForHostAndJoin()
+    {
+        NetworkSessionRequest.Host(1, " Samy ");
+
+        Assert.That(NetworkSessionRequest.Current.Mode, Is.EqualTo(NetworkSessionMode.Host));
+        Assert.That(NetworkSessionRequest.Current.Character, Is.EqualTo((byte)1));
+        Assert.That(NetworkSessionRequest.Current.PlayerName, Is.EqualTo("Samy"));
+
+        NetworkSessionRequest.Join(" 10.0.0.8 ", 5, "");
+
+        Assert.That(NetworkSessionRequest.Current.Mode, Is.EqualTo(NetworkSessionMode.Join));
+        Assert.That(NetworkSessionRequest.Current.ServerIp, Is.EqualTo("10.0.0.8"));
+        Assert.That(NetworkSessionRequest.Current.Character, Is.EqualTo((byte)5));
+        Assert.That(NetworkSessionRequest.Current.PlayerName, Is.EqualTo("Player"));
+    }
+
+    [Test]
+    public void NetworkLauncher_AppliesPendingSessionCharacterToClient()
+    {
+        launcherObject = new GameObject("network launcher");
+        GameClient client = launcherObject.AddComponent<GameClient>();
+        NetworkLauncher launcher = launcherObject.AddComponent<NetworkLauncher>();
+        launcher.Client = client;
+
+        launcher.ApplySessionRequest(new NetworkSessionRequestData(NetworkSessionMode.Join, "10.0.0.8", 3, "Samy"));
+
+        Assert.That(client.ServerIp, Is.EqualTo("10.0.0.8"));
+        Assert.That(client.Character, Is.EqualTo((byte)3));
+        Assert.That(client.PlayerName, Is.EqualTo("Samy"));
+    }
+
+    [Test]
+    public void GameMenu_UsesPlayerNameInputWhenQueueingSession()
+    {
+        menuObject = new GameObject("game menu");
+        string loadedScene = null;
+        NetworkSceneLoader.LoadScene = sceneName => loadedScene = sceneName;
+
+        GameMenu menu = menuObject.AddComponent<GameMenu>();
+        GameObject inputObject = new GameObject("player name input");
+        inputObject.transform.SetParent(menuObject.transform, false);
+        menu.PlayerNameInput = inputObject.AddComponent<TMP_InputField>();
+        menu.PlayerNameInput.text = "Nora";
+
+        menu.Join();
+
+        Assert.That(NetworkSessionRequest.Current.PlayerName, Is.EqualTo("Nora"));
+        Assert.That(loadedScene, Is.EqualTo("MetaVerse"));
+    }
+
+    [Test]
+    public void CharacterScore_SetPlayerNameCreatesNameTextBelowScore()
+    {
+        menuObject = new GameObject("score");
+        CharacterScore score = menuObject.AddComponent<CharacterScore>();
+        GameObject scoreTextObject = new GameObject(
+            "Score Text",
+            typeof(RectTransform),
+            typeof(MeshRenderer),
+            typeof(TextMeshPro));
+        scoreTextObject.transform.SetParent(menuObject.transform, false);
+        RectTransform scoreTextRect = scoreTextObject.GetComponent<RectTransform>();
+        scoreTextRect.localPosition = new Vector3(0f, 3f, 0f);
+        scoreTextRect.localScale = Vector3.one * 0.1f;
+        score.TxtScore = scoreTextObject.GetComponent<TMP_Text>();
+
+        score.SetPlayerName("Samy");
+
+        Assert.That(score.PlayerName, Is.EqualTo("Samy"));
+        Assert.That(score.TxtName, Is.Not.Null);
+        Assert.That(score.TxtName.text, Is.EqualTo("Samy"));
+
+        RectTransform nameRect = score.TxtName.GetComponent<RectTransform>();
+        Assert.That(nameRect.localPosition.y, Is.LessThan(scoreTextRect.localPosition.y));
+        Assert.That(nameRect.localPosition.y, Is.GreaterThan(scoreTextRect.localPosition.y - 0.8f));
+        Assert.That(nameRect.localScale.x, Is.EqualTo(scoreTextRect.localScale.x).Within(0.001f));
+    }
+
+    [Test]
+    public void Protocol_PlayerStateRoundTripsPlayerName()
+    {
+        var writer = new PacketWriter(MessageType.Spawn);
+        writer.WritePlayerState(
+            new PlayerState
+            {
+                Id = 9,
+                Character = 2,
+                PlayerName = "Samy",
+                Position = new Vector3(1f, 2f, 3f),
+                Yaw = 45f,
+            });
+
+        var reader = new PacketReader(writer.ToBytes());
+        PlayerState state = reader.ReadPlayerState();
+
+        Assert.That(state.Id, Is.EqualTo(9));
+        Assert.That(state.Character, Is.EqualTo((byte)2));
+        Assert.That(state.PlayerName, Is.EqualTo("Samy"));
+        Assert.That(state.Position, Is.EqualTo(new Vector3(1f, 2f, 3f)));
+        Assert.That(state.Yaw, Is.EqualTo(45f));
+    }
+
+    [Test]
+    public void Server_SendsExistingPlayerNameToJoiningClient()
+    {
+        int port = FindFreePort();
+        GameServer server = CreateServer(port);
+        using TcpClient firstClient = ConnectRawClient(port, character: 0, playerName: "Samy");
+        ReadWelcome(firstClient, () => PumpServer(server));
+
+        using TcpClient secondClient = ConnectRawClient(port, character: 1, playerName: "Nora");
+        ReadWelcome(secondClient, () => PumpServer(server));
+
+        PacketReader spawn = WaitForPacket(secondClient, MessageType.Spawn, () => PumpServer(server));
+        PlayerState existingPlayer = spawn.ReadPlayerState();
+
+        Assert.That(existingPlayer.Id, Is.EqualTo(1));
+        Assert.That(existingPlayer.PlayerName, Is.EqualTo("Samy"));
+    }
+
+    [Test]
+    public void GameMenu_SelectCharacterClampsToAvailableChoices()
+    {
+        menuObject = new GameObject("game menu");
+        GameMenu menu = menuObject.AddComponent<GameMenu>();
+
+        menu.SelectCharacter(99);
+
+        Assert.That(menu.SelectedCharacter, Is.EqualTo((byte)(menu.CharacterNames.Length - 1)));
+
+        menu.SelectCharacter(-4);
+
+        Assert.That(menu.SelectedCharacter, Is.EqualTo((byte)0));
+    }
+
+    [Test]
+    public void GameMenu_NextAndPreviousCharacterWrapAround()
+    {
+        menuObject = new GameObject("game menu");
+        GameMenu menu = menuObject.AddComponent<GameMenu>();
+
+        menu.SelectCharacter(0);
+        menu.NextCharacter();
+
+        Assert.That(menu.SelectedCharacter, Is.EqualTo((byte)1));
+
+        menu.PreviousCharacter();
+
+        Assert.That(menu.SelectedCharacter, Is.EqualTo((byte)0));
+
+        menu.PreviousCharacter();
+
+        Assert.That(menu.SelectedCharacter, Is.EqualTo((byte)(menu.CharacterNames.Length - 1)));
+    }
+
+    [Test]
+    public void GameMenu_DefaultCharacterNamesMatchMetaVersePrefabOrder()
+    {
+        menuObject = new GameObject("game menu");
+        GameMenu menu = menuObject.AddComponent<GameMenu>();
+
+        Assert.That(
+            menu.CharacterNames,
+            Is.EqualTo(new[] { "Barbare", "Ingenieur", "Druide", "Chevalier", "Mage", "Rogue" }));
     }
 
     [Test]
@@ -253,6 +447,97 @@ public class NetworkDespawnTests
     }
 
     [Test]
+    public void GameMenu_CreatesCharacterCarouselControlsInCanvas()
+    {
+        menuObject = new GameObject("game menu", typeof(Canvas));
+        GameObject panel = new GameObject("Connection Panel", typeof(RectTransform));
+        panel.transform.SetParent(menuObject.transform, false);
+        GameMenu menu = menuObject.AddComponent<GameMenu>();
+        menu.ShowOnGuiMenu = false;
+        GameObject firstPreview = new GameObject("barbarian preview");
+        GameObject secondPreview = new GameObject("engineer preview");
+        menu.CharacterNames = new[] { "Barbare", "Ingenieur" };
+        menu.CharacterPreviewPrefabs = new[] { firstPreview, secondPreview };
+
+        menu.EnsureCharacterSelectionUi();
+
+        Button[] buttons = menuObject.GetComponentsInChildren<Button>(true);
+        string[] buttonLabels = buttons
+            .Select(button => button.GetComponentInChildren<TMP_Text>(true)?.text)
+            .Where(label => !string.IsNullOrWhiteSpace(label))
+            .ToArray();
+
+        Assert.That(buttonLabels, Does.Contain("<"));
+        Assert.That(buttonLabels, Does.Contain(">"));
+        Assert.That(menu.CharacterNameText, Is.Not.Null);
+        Assert.That(menu.CharacterNameText.text, Is.EqualTo("Barbare"));
+        Assert.That(menu.CharacterPreviewRoot, Is.Not.Null);
+        Assert.That(menu.CharacterPreviewRoot.childCount, Is.EqualTo(1));
+        Assert.That(menu.CharacterPreviewRoot.GetChild(0).name, Does.StartWith("barbarian preview"));
+
+        menu.NextCharacter();
+
+        Assert.That(menu.CharacterNameText.text, Is.EqualTo("Ingenieur"));
+        Assert.That(menu.CharacterPreviewRoot.childCount, Is.EqualTo(1));
+        Assert.That(menu.CharacterPreviewRoot.GetChild(0).name, Does.StartWith("engineer preview"));
+
+        UnityEngine.Object.DestroyImmediate(firstPreview);
+        UnityEngine.Object.DestroyImmediate(secondPreview);
+    }
+
+    [Test]
+    public void GameMenu_StylesCanvasBackgroundAsStaticMenuBackdrop()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        menuObject = new GameObject("game menu", typeof(Canvas));
+        GameObject background = new GameObject(
+            "Background",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        background.transform.SetParent(menuObject.transform, false);
+        RectTransform backgroundRect = background.GetComponent<RectTransform>();
+        backgroundRect.anchorMin = Vector2.zero;
+        backgroundRect.anchorMax = Vector2.one;
+        Image backgroundImage = background.GetComponent<Image>();
+        backgroundImage.color = new Color(0.09f, 0.13f, 0.18f, 1f);
+        backgroundImage.raycastTarget = true;
+
+        GameObject panel = new GameObject("Connection Panel", typeof(RectTransform), typeof(Image));
+        panel.transform.SetParent(menuObject.transform, false);
+        GameMenu menu = menuObject.AddComponent<GameMenu>();
+        menu.ShowOnGuiMenu = false;
+
+        menu.EnsureCharacterSelectionUi();
+
+        Assert.That(backgroundImage.color.r, Is.EqualTo(0.10f).Within(0.001f));
+        Assert.That(backgroundImage.color.g, Is.EqualTo(0.11f).Within(0.001f));
+        Assert.That(backgroundImage.color.b, Is.EqualTo(0.10f).Within(0.001f));
+        Assert.That(backgroundImage.color.a, Is.EqualTo(1f));
+        Assert.That(backgroundImage.raycastTarget, Is.False);
+    }
+
+    [Test]
+    public void GameMenu_StartDoesNotCreateFakeWorldBackdrop()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        menuObject = new GameObject("game menu", typeof(Canvas));
+        GameObject panel = new GameObject("Connection Panel", typeof(RectTransform), typeof(Image));
+        panel.transform.SetParent(menuObject.transform, false);
+        GameObject cameraObject = new GameObject("Main Camera", typeof(Camera));
+        cameraObject.tag = "MainCamera";
+        GameMenu menu = menuObject.AddComponent<GameMenu>();
+        menu.ShowOnGuiMenu = false;
+
+        GameMenuStart.Invoke(menu, null);
+
+        Assert.That(GameObject.Find("Menu Background"), Is.Null);
+        Assert.That(GameObject.Find("Road"), Is.Null);
+        Assert.That(GameObject.Find("Left Sidewalk"), Is.Null);
+        Assert.That(GameObject.Find("Right Sidewalk"), Is.Null);
+    }
+
+    [Test]
     public void MetaVerseScene_DisablesLegacyNetworkOnGuiAndAutostartsMenuRequests()
     {
         EditorSceneManager.OpenScene("Assets/Demos/MetaVerse/MetaVerse.unity", OpenSceneMode.Single);
@@ -285,7 +570,7 @@ public class NetworkDespawnTests
         return client;
     }
 
-    static TcpClient ConnectRawClient(int port, byte character)
+    static TcpClient ConnectRawClient(int port, byte character, string playerName = "Player")
     {
         var client = new TcpClient();
         client.Connect(IPAddress.Loopback, port);
@@ -293,6 +578,7 @@ public class NetworkDespawnTests
 
         var writer = new PacketWriter(MessageType.Connect);
         writer.WriteByte(character);
+        writer.WriteString(playerName);
         byte[] bytes = writer.ToBytes();
         client.GetStream().Write(bytes, 0, bytes.Length);
 
@@ -362,7 +648,17 @@ public class NetworkDespawnTests
         return SpawnPacket(playerId, character, Vector3.zero, 0f);
     }
 
+    static byte[] SpawnPacket(int playerId, byte character, string playerName)
+    {
+        return SpawnPacket(playerId, character, Vector3.zero, 0f, playerName);
+    }
+
     static byte[] SpawnPacket(int playerId, byte character, Vector3 position, float yaw)
+    {
+        return SpawnPacket(playerId, character, position, yaw, "Player");
+    }
+
+    static byte[] SpawnPacket(int playerId, byte character, Vector3 position, float yaw, string playerName)
     {
         var writer = new PacketWriter(MessageType.Spawn);
         writer.WritePlayerState(
@@ -370,6 +666,7 @@ public class NetworkDespawnTests
             {
                 Id = playerId,
                 Character = character,
+                PlayerName = playerName,
                 Position = position,
                 Yaw = yaw,
             });

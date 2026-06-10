@@ -8,13 +8,27 @@ public enum NetworkSessionMode
 public readonly struct NetworkSessionRequestData
 {
     public NetworkSessionRequestData(NetworkSessionMode mode, string serverIp)
+        : this(mode, serverIp, 0, PlayerNames.DefaultName)
+    {
+    }
+
+    public NetworkSessionRequestData(NetworkSessionMode mode, string serverIp, byte character)
+        : this(mode, serverIp, character, PlayerNames.DefaultName)
+    {
+    }
+
+    public NetworkSessionRequestData(NetworkSessionMode mode, string serverIp, byte character, string playerName)
     {
         Mode = mode;
         ServerIp = serverIp;
+        Character = character;
+        PlayerName = PlayerNames.Normalize(playerName);
     }
 
     public NetworkSessionMode Mode { get; }
     public string ServerIp { get; }
+    public byte Character { get; }
+    public string PlayerName { get; }
     public bool HasRequest => Mode != NetworkSessionMode.None;
 }
 
@@ -25,12 +39,32 @@ public static class NetworkSessionRequest
 
     public static void Host()
     {
-        Current = new NetworkSessionRequestData(NetworkSessionMode.Host, "127.0.0.1");
+        Host(0, PlayerNames.DefaultName);
+    }
+
+    public static void Host(byte character)
+    {
+        Host(character, PlayerNames.DefaultName);
+    }
+
+    public static void Host(byte character, string playerName)
+    {
+        Current = new NetworkSessionRequestData(NetworkSessionMode.Host, "127.0.0.1", character, playerName);
     }
 
     public static void Join(string serverIp)
     {
-        Current = new NetworkSessionRequestData(NetworkSessionMode.Join, NormalizeIp(serverIp));
+        Join(serverIp, 0, PlayerNames.DefaultName);
+    }
+
+    public static void Join(string serverIp, byte character)
+    {
+        Join(serverIp, character, PlayerNames.DefaultName);
+    }
+
+    public static void Join(string serverIp, byte character, string playerName)
+    {
+        Current = new NetworkSessionRequestData(NetworkSessionMode.Join, NormalizeIp(serverIp), character, playerName);
     }
 
     public static NetworkSessionRequestData Consume()

@@ -2122,8 +2122,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.09803922, g: 0.13725491, b: 0.19215687, a: 1}
-  m_RaycastTarget: 1
+  m_Color: {r: 0.1, g: 0.11, b: 0.1, a: 1}
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -2178,9 +2178,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: Mmorpg.Runtime::GameMenu
   GameSceneName: MetaVerse
   ServerIp: 127.0.0.1
+  PlayerName: Player
   ShowOnGuiMenu: 0
+  SelectedCharacter: 0
+  CharacterNames:
+  - Barbare
+  - Ingenieur
+  - Druide
+  - Chevalier
+  - Mage
+  - Rogue
+  CharacterPreviewPrefabs:
+  - {fileID: 4951489478362920825, guid: 0e2abf282659848e18e810b736a58bfb, type: 3}
+  - {fileID: 4679524302450112083, guid: 00bc35fbb929242ab98f9c73ab0d0956, type: 3}
+  - {fileID: 2468555049213913801, guid: c46abba28dffe4b0c8861ffe170c1e8b, type: 3}
+  - {fileID: 3619793941055410850, guid: 247723e110a4f4dacb2c9a61d4d10423, type: 3}
+  - {fileID: 5875863984133747540, guid: fb7515f2c2a6346b3b0d27762d19f7f9, type: 3}
+  - {fileID: 8739321244449247443, guid: 8f3cfc0d0b788493abcd8992c93016c0, type: 3}
   IpInput: {fileID: 308199899}
+  PlayerNameInput: {fileID: 0}
   StatusText: {fileID: 1177277598}
+  CharacterSelectionPanel: {fileID: 0}
+  CharacterPreviewRoot: {fileID: 0}
+  CharacterNameText: {fileID: 0}
+  PreviousCharacterButton: {fileID: 0}
+  NextCharacterButton: {fileID: 0}
 --- !u!4 &1800418146
 Transform:
   m_ObjectHideFlags: 0
