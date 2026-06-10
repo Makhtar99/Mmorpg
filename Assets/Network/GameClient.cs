@@ -34,6 +34,9 @@ public class GameClient : MonoBehaviour
     private readonly Dictionary<int, Bonus> _bonuses = new Dictionary<int, Bonus>();
 
     public int MyId => _myId;
+    public bool IsConnected => _connected;
+    public bool HasLocalPlayer => _localPlayer != null;
+    public int RemotePlayerCount => _remotePlayers.Count;
 
     void Awake()
     {
@@ -49,6 +52,11 @@ public class GameClient : MonoBehaviour
     {
         try
         {
+            if (_connected)
+            {
+                return true;
+            }
+
             _tcp = new TcpClient();
             _tcp.Connect(ServerIp, Port);
             _stream = _tcp.GetStream();
@@ -68,6 +76,7 @@ public class GameClient : MonoBehaviour
         catch (System.Exception ex)
         {
             Debug.LogError("Connection failed: " + ex.Message);
+            CloseNetwork();
             return false;
         }
     }
@@ -81,9 +90,15 @@ public class GameClient : MonoBehaviour
 
     void OnDisable()
     {
-        if (_tcp != null) { _tcp.Close(); _tcp = null; }
-        if (_udp != null) { _udp.Close(); _udp = null; }
-        _connected = false;
+        LeaveServer();
+    }
+
+    public void LeaveServer()
+    {
+        CloseNetwork();
+        ClearPlayers();
+        _framer.Clear();
+        _seq = 0;
     }
 
     public void SendMove(Vector3 position, float yaw)
@@ -110,18 +125,45 @@ public class GameClient : MonoBehaviour
         _bonuses[bonus.BonusId] = bonus;
     }
 
+    public bool HasRemotePlayer(int id) => _remotePlayers.ContainsKey(id);
+
+    public NetworkPlayer GetRemotePlayer(int id)
+    {
+        _remotePlayers.TryGetValue(id, out NetworkPlayer player);
+        return player;
+    }
+
     private void ReceiveTcp()
     {
-        int available = _tcp.Available;
-        if (available > 0)
+        try
         {
-            byte[] tmp = new byte[available];
-            int read = _stream.Read(tmp, 0, available);
-            _framer.Push(tmp, read);
-        }
+            if (IsTcpClosed(_tcp))
+            {
+                LeaveServer();
+                return;
+            }
 
-        while (_framer.TryRead(out byte[] packet))
-            HandleTcp(packet);
+            int available = _tcp.Available;
+            if (available > 0)
+            {
+                byte[] tmp = new byte[available];
+                int read = _stream.Read(tmp, 0, available);
+                if (read == 0)
+                {
+                    LeaveServer();
+                    return;
+                }
+                _framer.Push(tmp, read);
+            }
+
+            while (_framer.TryRead(out byte[] packet))
+                HandleTcp(packet);
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning("Client TCP closed: " + ex.Message);
+            LeaveServer();
+        }
     }
 
     private void HandleTcp(byte[] packet)
@@ -215,6 +257,7 @@ public class GameClient : MonoBehaviour
         if (prefab == null) return;
 
         GameObject go = Instantiate(prefab, s.Position, Quaternion.Euler(0f, s.Yaw, 0f));
+        go.name = "Remote Player " + s.Id;
 
         NetworkPlayer np = go.GetComponent<NetworkPlayer>();
         if (np == null) np = go.AddComponent<NetworkPlayer>();
@@ -227,7 +270,7 @@ public class GameClient : MonoBehaviour
     {
         if (_remotePlayers.TryGetValue(id, out NetworkPlayer np))
         {
-            Destroy(np.gameObject);
+            DestroyGameObject(np.gameObject);
             _remotePlayers.Remove(id);
         }
     }
@@ -266,5 +309,82 @@ public class GameClient : MonoBehaviour
     {
         try { _stream.Write(bytes, 0, bytes.Length); }
         catch (System.Exception e) { Debug.LogWarning(e.Message); }
+    }
+
+    private void CloseNetwork()
+    {
+        if (_tcp != null)
+        {
+            try { _tcp.Client.Shutdown(SocketShutdown.Both); } catch { }
+            try { _tcp.Close(); } catch { }
+            _tcp = null;
+        }
+
+        _stream = null;
+
+        if (_udp != null)
+        {
+            try { _udp.Close(); } catch { }
+            _udp = null;
+        }
+
+        _serverUdp = null;
+        _connected = false;
+    }
+
+    private void ClearPlayers()
+    {
+        if (_localPlayer != null)
+        {
+            DestroyGameObject(_localPlayer.gameObject);
+            _localPlayer = null;
+        }
+
+        foreach (NetworkPlayer player in _remotePlayers.Values)
+        {
+            if (player != null)
+            {
+                DestroyGameObject(player.gameObject);
+            }
+        }
+
+        _remotePlayers.Clear();
+        _myId = 0;
+    }
+
+    private static bool IsTcpClosed(TcpClient client)
+    {
+        try
+        {
+            Socket socket = client.Client;
+            return socket == null ||
+                !socket.Connected ||
+                (socket.Poll(0, SelectMode.SelectRead) && socket.Available == 0);
+        }
+        catch (SocketException)
+        {
+            return true;
+        }
+        catch (System.ObjectDisposedException)
+        {
+            return true;
+        }
+    }
+
+    private static void DestroyGameObject(GameObject target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(target);
+        }
+        else
+        {
+            DestroyImmediate(target);
+        }
     }
 }

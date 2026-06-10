@@ -84,8 +84,17 @@ public class GameServer : MonoBehaviour
 
     void OnDisable()
     {
+        StopServer();
+    }
+
+    public void StopServer()
+    {
         if (_tcpListener != null) { _tcpListener.Stop(); _tcpListener = null; }
         if (_udp != null) { _udp.Close(); _udp = null; }
+        foreach (Client c in _clients.Values)
+        {
+            try { c.Tcp.Close(); } catch { }
+        }
         _clients.Clear();
     }
 
@@ -116,6 +125,12 @@ public class GameServer : MonoBehaviour
         {
             try
             {
+                if (IsClientDisconnected(c))
+                {
+                    (dead ??= new List<int>()).Add(c.Id);
+                    continue;
+                }
+
                 int available = c.Tcp.Available;
                 if (available > 0)
                 {
@@ -130,7 +145,7 @@ public class GameServer : MonoBehaviour
                     while (c.Framer.TryRead(out byte[] packet))
                         HandleTcpPacket(c, packet);
                 }
-                else if (!c.Tcp.Connected)
+                else if (IsClientDisconnected(c))
                 {
                     (dead ??= new List<int>()).Add(c.Id);
                 }
@@ -144,6 +159,25 @@ public class GameServer : MonoBehaviour
 
         if (dead != null)
             foreach (int id in dead) RemoveClient(id);
+    }
+
+    private bool IsClientDisconnected(Client c)
+    {
+        try
+        {
+            Socket socket = c.Tcp.Client;
+            return socket == null ||
+                !socket.Connected ||
+                (socket.Poll(0, SelectMode.SelectRead) && socket.Available == 0);
+        }
+        catch (SocketException)
+        {
+            return true;
+        }
+        catch (System.ObjectDisposedException)
+        {
+            return true;
+        }
     }
 
     private void HandleTcpPacket(Client c, byte[] packet)
