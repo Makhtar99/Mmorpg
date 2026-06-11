@@ -36,8 +36,11 @@ public class GameServer : MonoBehaviour
 
     public bool IsRunning => _tcpListener != null;
 
+    public static GameServer Instance { get; private set; }
+
     void Awake()
     {
+        Instance = this;
         if (AutoStart) StartServer();
     }
 
@@ -79,6 +82,7 @@ public class GameServer : MonoBehaviour
         {
             _snapshotTimer = 0f;
             SendSnapshot();
+            SendObjectStates();
         }
     }
 
@@ -307,6 +311,31 @@ public class GameServer : MonoBehaviour
             w.WriteInt(c.State.Id);
             w.WritePositionQuantized(c.State.Position);
             w.WriteYawQuantized(c.State.Yaw);
+        }
+        byte[] bytes = w.ToBytes();
+
+        foreach (Client c in _clients.Values)
+        {
+            if (c.UdpEndpoint == null) continue;
+            try { _udp.Send(bytes, bytes.Length, c.UdpEndpoint); }
+            catch (SocketException e) { Debug.LogWarning(e.Message); }
+        }
+    }
+
+    private void SendObjectStates()
+    {
+        var objects = NetworkedObject.All;
+        if (objects.Count == 0) return;
+
+        NetworkedObject.EnsureIds();
+
+        PacketWriter w = new PacketWriter(MessageType.ObjectState);
+        w.WriteInt(objects.Count);
+        foreach (NetworkedObject o in objects)
+        {
+            w.WriteInt(o.ObjectId);
+            w.WritePositionQuantized(o.transform.position);
+            w.WriteYawQuantized(o.transform.eulerAngles.y);
         }
         byte[] bytes = w.ToBytes();
 

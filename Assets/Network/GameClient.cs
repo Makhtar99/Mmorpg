@@ -73,6 +73,11 @@ public class GameClient : MonoBehaviour
 
             _connected = true;
             Debug.Log("Connected to " + ServerIp + ":" + Port);
+
+            bool isHost = GameServer.Instance != null && GameServer.Instance.IsRunning;
+            if (!isHost)
+                foreach (NetworkedObject o in NetworkedObject.All) o.SetAsRemote();
+
             return true;
         }
         catch (System.Exception ex)
@@ -221,6 +226,19 @@ public class GameClient : MonoBehaviour
                     if (id == _myId) continue;
                     if (_remotePlayers.TryGetValue(id, out NetworkPlayer np))
                         np.SetNetworkTarget(pos, yaw);
+                }
+            }
+            else if (r.Type == MessageType.ObjectState)
+            {
+                int count = r.ReadInt();
+                for (int i = 0; i < count; i++)
+                {
+                    int id = r.ReadInt();
+                    Vector3 pos = r.ReadPositionQuantized();
+                    float yaw = r.ReadYawQuantized();
+
+                    NetworkedObject o = NetworkedObject.Find(id);
+                    if (o != null) o.SetNetworkTarget(pos, yaw);
                 }
             }
         }

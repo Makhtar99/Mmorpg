@@ -79,6 +79,7 @@ public class NetworkPlayer : MonoBehaviour
         Vector2 v = _move.ReadValue<Vector2>();
         if (_anim != null) _anim.SetFloat("Walk", v.y);
 
+        _rb.angularVelocity = Vector3.zero;
         _rb.MovePosition(_rb.position + transform.forward * (MoveSpeed * Time.fixedDeltaTime * v.y));
         _rb.MoveRotation(_rb.rotation * Quaternion.AngleAxis(RotateSpeed * Time.fixedDeltaTime * v.x, Vector3.up));
     }
