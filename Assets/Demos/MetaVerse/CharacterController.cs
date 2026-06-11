@@ -49,6 +49,6 @@ public class CharacterController : MonoBehaviour
     }
 
     void OnDisable() {
-      PlayerAction.Disable();
+      if (PlayerAction != null) PlayerAction.Disable();
     }
 }
