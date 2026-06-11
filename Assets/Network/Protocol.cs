@@ -14,6 +14,7 @@ public enum MessageType : byte
     PickupRequest = 7,
     PickupAck     = 8,
     BonusState    = 9,
+    ObjectState   = 10,
 }
 
 public struct PlayerState

@@ -962,7 +962,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1786120881}
   m_SourcePrefab: {fileID: 100100000, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
 --- !u!4 &13651426 stripped
 Transform:
@@ -5638,6 +5641,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 9ed60009a1f07894093db2dc44371289, type: 3}
       insertIndex: -1
       addedObject: {fileID: 186848076}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 9ed60009a1f07894093db2dc44371289, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 186848077}
   m_SourcePrefab: {fileID: 100100000, guid: 9ed60009a1f07894093db2dc44371289, type: 3}
 --- !u!4 &87594679 stripped
 Transform:
@@ -8080,6 +8086,8 @@ MonoBehaviour:
   IpInput: {fileID: 1820072610}
   StatusText: {fileID: 0}
   MenuPanel: {fileID: 0}
+  SessionMenuPanel: {fileID: 0}
+  SessionStatusText: {fileID: 0}
   GameMenuSceneName: GameMenu
   LoadGameMenuOnLeave: 1
   AutoStartPendingSession: 1
@@ -10216,6 +10224,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1403304660}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1403304661}
   m_SourcePrefab: {fileID: 100100000, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
 --- !u!4 &160618230 stripped
 Transform:
@@ -11552,6 +11563,20 @@ Animation:
   m_AnimatePhysics: 0
   m_UpdateMode: 0
   m_CullingType: 0
+--- !u!114 &186848077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 186848074}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &187988813
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13757,6 +13782,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: cf79aa405c41c8d499cf5a6ee98a81f6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2053262952}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: cf79aa405c41c8d499cf5a6ee98a81f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2053262953}
   m_SourcePrefab: {fileID: 100100000, guid: cf79aa405c41c8d499cf5a6ee98a81f6, type: 3}
 --- !u!4 &222625480 stripped
 Transform:
@@ -21187,6 +21215,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: e78aa10d7a5691f47864f601c4e1349a, type: 3}
   m_PrefabInstance: {fileID: 354929565}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &356498696 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100006, guid: 9ed60009a1f07894093db2dc44371289, type: 3}
+  m_PrefabInstance: {fileID: 1689940216}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &356861993
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21468,6 +21501,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1497666897}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1497666898}
   m_SourcePrefab: {fileID: 100100000, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
 --- !u!4 &359436777 stripped
 Transform:
@@ -25532,6 +25568,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: db82f752a76603840ae8f5c07d896395, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2045041310}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: db82f752a76603840ae8f5c07d896395, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2045041311}
   m_SourcePrefab: {fileID: 100100000, guid: db82f752a76603840ae8f5c07d896395, type: 3}
 --- !u!4 &442083684 stripped
 Transform:
@@ -26599,6 +26638,11 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 75f9838fda71f3e4b856da3eb156f8c4, type: 3}
   m_PrefabInstance: {fileID: 458984500}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &460865724 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100006, guid: cf68317c6e47bfd4fb5e65d14426d3f6, type: 3}
+  m_PrefabInstance: {fileID: 1755795400}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &461879296
 PrefabInstance:
@@ -29887,12 +29931,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 88e75a6c5390b0041a26d2ff8783fc50, type: 3}
       insertIndex: -1
       addedObject: {fileID: 357075670}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 88e75a6c5390b0041a26d2ff8783fc50, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 520648292}
   m_SourcePrefab: {fileID: 100100000, guid: 88e75a6c5390b0041a26d2ff8783fc50, type: 3}
 --- !u!4 &520648291 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: 88e75a6c5390b0041a26d2ff8783fc50, type: 3}
   m_PrefabInstance: {fileID: 520648290}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &520648292
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 357075668}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &521209838
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -39296,12 +39357,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 05ce0fc1cda2d8a4a9a75c5562c3a1a1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 239688569}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 05ce0fc1cda2d8a4a9a75c5562c3a1a1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 677089430}
   m_SourcePrefab: {fileID: 100100000, guid: 05ce0fc1cda2d8a4a9a75c5562c3a1a1, type: 3}
 --- !u!4 &677089429 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: 05ce0fc1cda2d8a4a9a75c5562c3a1a1, type: 3}
   m_PrefabInstance: {fileID: 677089428}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &677089430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 239688567}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &677216700
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -47332,7 +47410,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 46d6937a9c5047c4aaa2203f8622e64f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1763775812}
   m_SourcePrefab: {fileID: 100100000, guid: 46d6937a9c5047c4aaa2203f8622e64f, type: 3}
 --- !u!4 &818007594 stripped
 Transform:
@@ -49206,6 +49287,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: cf68317c6e47bfd4fb5e65d14426d3f6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1533186377}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: cf68317c6e47bfd4fb5e65d14426d3f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1533186378}
   m_SourcePrefab: {fileID: 100100000, guid: cf68317c6e47bfd4fb5e65d14426d3f6, type: 3}
 --- !u!4 &844860405 stripped
 Transform:
@@ -70064,12 +70148,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 777654221}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1199226226}
   m_SourcePrefab: {fileID: 100100000, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
 --- !u!4 &1199226225 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
   m_PrefabInstance: {fileID: 1199226224}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1199226226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 777654219}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1200451967
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -83016,6 +83117,20 @@ Animation:
   m_AnimatePhysics: 0
   m_UpdateMode: 0
   m_CullingType: 0
+--- !u!114 &1403304661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1403304658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1404783111
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -84799,6 +84914,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: b3875f93f8fc922449b01643bd30a8ff, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1865913432}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: b3875f93f8fc922449b01643bd30a8ff, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1865913433}
   m_SourcePrefab: {fileID: 100100000, guid: b3875f93f8fc922449b01643bd30a8ff, type: 3}
 --- !u!4 &1434226219 stripped
 Transform:
@@ -86730,6 +86848,11 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 07aee446266536145bda6a22602e1215, type: 3}
   m_PrefabInstance: {fileID: 1463010536}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1463346135 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100006, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
+  m_PrefabInstance: {fileID: 1677886237}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1464105055
 PrefabInstance:
@@ -88857,6 +88980,20 @@ Animation:
   m_AnimatePhysics: 0
   m_UpdateMode: 0
   m_CullingType: 0
+--- !u!114 &1497666898
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1497666895}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1497678170
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -90503,6 +90640,20 @@ Animation:
   m_AnimatePhysics: 0
   m_UpdateMode: 0
   m_CullingType: 0
+--- !u!114 &1533186378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533186375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1533308280
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -93593,6 +93744,7 @@ MonoBehaviour:
   ServerIp: 127.0.0.1
   Port: 25000
   Character: 0
+  PlayerName: Player
   ConnectOnStart: 0
   CharacterPrefabs:
   - {fileID: 4951489478362920825, guid: 0e2abf282659848e18e810b736a58bfb, type: 3}
@@ -98763,13 +98915,30 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1677886239}
   m_SourcePrefab: {fileID: 100100000, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
 --- !u!4 &1677886238 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
   m_PrefabInstance: {fileID: 1677886237}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1677886239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1463346135}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1678568081
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -99971,13 +100140,30 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 9ed60009a1f07894093db2dc44371289, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1689940218}
   m_SourcePrefab: {fileID: 100100000, guid: 9ed60009a1f07894093db2dc44371289, type: 3}
 --- !u!4 &1689940217 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: 9ed60009a1f07894093db2dc44371289, type: 3}
   m_PrefabInstance: {fileID: 1689940216}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1689940218
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 356498696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1691230923
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -103191,13 +103377,30 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: cf68317c6e47bfd4fb5e65d14426d3f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1755795402}
   m_SourcePrefab: {fileID: 100100000, guid: cf68317c6e47bfd4fb5e65d14426d3f6, type: 3}
 --- !u!4 &1755795401 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: cf68317c6e47bfd4fb5e65d14426d3f6, type: 3}
   m_PrefabInstance: {fileID: 1755795400}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1755795402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 460865724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1756768973
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -103710,6 +103913,25 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 9b7cde3063ed2714fbfb792f42777784, type: 3}
   m_PrefabInstance: {fileID: 1763667942}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1763775811 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100006, guid: 46d6937a9c5047c4aaa2203f8622e64f, type: 3}
+  m_PrefabInstance: {fileID: 818007593}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1763775812
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1763775811}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1763906540
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -104968,6 +105190,25 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 8b73cf7f9f2333446a60bbfb80b4c03d, type: 3}
   m_PrefabInstance: {fileID: 1785565782}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1786120880 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100006, guid: 4dae6c68afb9d6f49bff78db152a6f9c, type: 3}
+  m_PrefabInstance: {fileID: 13651425}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1786120881
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786120880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1786778261
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -109418,6 +109659,20 @@ Animation:
   m_AnimatePhysics: 0
   m_UpdateMode: 0
   m_CullingType: 0
+--- !u!114 &1865913433
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1865913430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1867391183
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -111339,12 +111594,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 1de630586ed313d4fa239483284fdf33, type: 3}
       insertIndex: -1
       addedObject: {fileID: 408501721}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 1de630586ed313d4fa239483284fdf33, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1903499307}
   m_SourcePrefab: {fileID: 100100000, guid: 1de630586ed313d4fa239483284fdf33, type: 3}
 --- !u!4 &1903499306 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: 1de630586ed313d4fa239483284fdf33, type: 3}
   m_PrefabInstance: {fileID: 1903499305}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1903499307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408501719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1905374754
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -112012,12 +112284,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1460721422}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1915516526}
   m_SourcePrefab: {fileID: 100100000, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
 --- !u!4 &1915516525 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: a28e74cafe042b14c9cd19bc6a16dca5, type: 3}
   m_PrefabInstance: {fileID: 1915516524}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1915516526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1460721420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1915809274
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -112831,12 +113120,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 46d6937a9c5047c4aaa2203f8622e64f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 419465746}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 46d6937a9c5047c4aaa2203f8622e64f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1926945366}
   m_SourcePrefab: {fileID: 100100000, guid: 46d6937a9c5047c4aaa2203f8622e64f, type: 3}
 --- !u!4 &1926945365 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: 46d6937a9c5047c4aaa2203f8622e64f, type: 3}
   m_PrefabInstance: {fileID: 1926945364}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1926945366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 419465744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1927180514
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -115016,12 +115322,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 8f7168e4b549a5c4e8454697e9cd57bd, type: 3}
       insertIndex: -1
       addedObject: {fileID: 591342042}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 8f7168e4b549a5c4e8454697e9cd57bd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1967439091}
   m_SourcePrefab: {fileID: 100100000, guid: 8f7168e4b549a5c4e8454697e9cd57bd, type: 3}
 --- !u!4 &1967439090 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: 8f7168e4b549a5c4e8454697e9cd57bd, type: 3}
   m_PrefabInstance: {fileID: 1967439089}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1967439091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 591342040}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &1967948023
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -120158,6 +120481,20 @@ Animation:
   m_AnimatePhysics: 0
   m_UpdateMode: 0
   m_CullingType: 0
+--- !u!114 &2045041311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2045041308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &2045471379
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -120630,6 +120967,20 @@ Animation:
   m_AnimatePhysics: 0
   m_UpdateMode: 0
   m_CullingType: 0
+--- !u!114 &2053262953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2053262950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1001 &2054646694
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -126703,12 +127054,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100006, guid: 05ce0fc1cda2d8a4a9a75c5562c3a1a1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 220114055}
+    - targetCorrespondingSourceObject: {fileID: 100006, guid: 05ce0fc1cda2d8a4a9a75c5562c3a1a1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2145946949}
   m_SourcePrefab: {fileID: 100100000, guid: 05ce0fc1cda2d8a4a9a75c5562c3a1a1, type: 3}
 --- !u!4 &2145946948 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400006, guid: 05ce0fc1cda2d8a4a9a75c5562c3a1a1, type: 3}
   m_PrefabInstance: {fileID: 2145946947}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2145946949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 220114053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bc36b56250044fc49f96ed760d005f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mmorpg.Runtime::NetworkedObject
+  ObjectId: 0
+  InterpolationSpeed: 10
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
