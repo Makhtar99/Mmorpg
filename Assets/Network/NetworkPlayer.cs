@@ -106,6 +106,16 @@ public class NetworkPlayer : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Multiplie la vitesse de déplacement actuelle par le facteur donné.
+    /// L'effet est permanent jusqu'à la fin de la partie (pas de réinitialisation).
+    /// </summary>
+    public void ApplySpeedBoost(float multiplier)
+    {
+        MoveSpeed *= multiplier;
+        Debug.Log($"[SpeedBoost] Nouvelle vitesse : {MoveSpeed:F2} (x{multiplier})");
+    }
+
     void OnDisable()
     {
         if (_move != null) _move.Disable();

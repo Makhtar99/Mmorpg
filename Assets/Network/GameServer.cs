@@ -8,6 +8,7 @@ public class GameServer : MonoBehaviour
     public int Port = 25000;
     public float SnapshotsPerSecond = 20f;
     public int FullSnapshotEvery = 30;
+    public float MatchDurationSeconds = 180f;
     public bool AutoStart = false;
     public float BonusRespawnDelaySeconds = 5f;
     public Transform[] BonusSpawnPoints;
@@ -55,6 +56,11 @@ public class GameServer : MonoBehaviour
     private float _snapshotTimer;
     private int _snapshotCounter;
     private bool _bonusStatesInitialized;
+    
+    private float _matchTimeRemaining;
+    private bool _matchStarted;
+    private bool _matchEnded;
+    private float _timerSyncTimer;
 
     public bool IsRunning => _tcpListener != null;
 
@@ -101,6 +107,10 @@ public class GameServer : MonoBehaviour
         ReceiveUdp();
         UpdateBonusRespawns();
 
+        if (_matchEnded) return;
+
+        UpdateMatchTimer();
+
         _snapshotTimer += Time.deltaTime;
         if (_snapshotTimer >= 1f / SnapshotsPerSecond)
         {
@@ -127,6 +137,10 @@ public class GameServer : MonoBehaviour
         _bonusStates.Clear();
         _bonusSpawnPositions.Clear();
         _bonusStatesInitialized = false;
+
+        _matchStarted = false;
+        _matchEnded = false;
+        _matchTimeRemaining = 0f;
     }
 
     private void AcceptConnections()
@@ -231,6 +245,9 @@ public class GameServer : MonoBehaviour
                 SendExistingPlayersTo(c);
                 SendBonusState(c);
                 BroadcastSpawn(c.State);
+                
+                StartMatchIfNeeded();
+                SendTimerSync(c);
                 break;
 
             case MessageType.PickupRequest:
@@ -264,6 +281,8 @@ public class GameServer : MonoBehaviour
 
     private void HandlePickup(Client c, int bonusId)
     {
+        if (_matchEnded) return;
+
         BonusRuntimeState bonus = EnsureBonusState(bonusId);
         if (!bonus.Active) return;
 
@@ -589,5 +608,67 @@ public class GameServer : MonoBehaviour
     private Vector3 SpawnPosition(int id)
     {
         return new Vector3((id % 4) * 2f, 0f, (id / 4) * 2f);
+    }
+
+    private void StartMatchIfNeeded()
+    {
+        if (_matchStarted) return;
+        _matchStarted = true;
+        _matchTimeRemaining = Mathf.Max(1f, MatchDurationSeconds);
+        _timerSyncTimer = 0f;
+    }
+
+    private void UpdateMatchTimer()
+    {
+        if (!_matchStarted || _matchEnded) return;
+
+        _matchTimeRemaining -= Time.deltaTime;
+
+        _timerSyncTimer += Time.deltaTime;
+        if (_timerSyncTimer >= 1f)
+        {
+            _timerSyncTimer = 0f;
+            BroadcastTimerSync();
+        }
+
+        if (_matchTimeRemaining <= 0f)
+        {
+            _matchTimeRemaining = 0f;
+            _matchEnded = true;
+            BroadcastGameOver();
+        }
+    }
+
+    private void BroadcastTimerSync()
+    {
+        PacketWriter w = new PacketWriter(MessageType.TimerSync);
+        w.WriteFloat(Mathf.Max(0f, _matchTimeRemaining));
+        BroadcastTcp(w.ToBytes());
+    }
+
+    private void SendTimerSync(Client c)
+    {
+        if (!_matchStarted) return;
+        PacketWriter w = new PacketWriter(MessageType.TimerSync);
+        w.WriteFloat(Mathf.Max(0f, _matchTimeRemaining));
+        SendTcp(c, w.ToBytes());
+    }
+
+    private void BroadcastGameOver()
+    {
+        // Collect all players and sort by score descending
+        List<Client> sorted = new List<Client>(_clients.Values);
+        sorted.Sort((a, b) => b.Score.CompareTo(a.Score));
+
+        int top = Mathf.Min(3, sorted.Count);
+        PacketWriter w = new PacketWriter(MessageType.GameOver);
+        w.WriteInt(top);
+        for (int i = 0; i < top; i++)
+        {
+            w.WriteInt(sorted[i].Id);
+            w.WriteString(sorted[i].State.PlayerName);
+            w.WriteInt(sorted[i].Score);
+        }
+        BroadcastTcp(w.ToBytes());
     }
 }

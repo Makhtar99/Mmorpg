@@ -16,6 +16,8 @@ public enum MessageType : byte
     BonusState    = 9,
     ObjectState   = 10,
     BonusSpawn    = 11,
+    GameOver      = 12,
+    TimerSync     = 13,
 }
 
 public struct PlayerState
