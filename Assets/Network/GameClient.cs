@@ -54,12 +54,7 @@ public class GameClient : MonoBehaviour
     {
         Instance = this;
 
-        // Crée le LeaderboardUI persistant s'il n'existe pas encore
-        if (LeaderboardUI.Instance == null)
-        {
-            GameObject lb = new GameObject("LeaderboardUI");
-            lb.AddComponent<LeaderboardUI>();
-        }
+
 
         // Crée le GameLogUI persistant s'il n'existe pas encore
         if (GameLogUI.Instance == null)
@@ -241,8 +236,7 @@ public class GameClient : MonoBehaviour
             case MessageType.Welcome:
                 _myId = r.ReadInt();
                 SpawnLocalPlayer();
-                if (LeaderboardUI.Instance != null)
-                    LeaderboardUI.Instance.SetLocalPlayer(_myId);
+
                 break;
 
             case MessageType.Spawn:
@@ -260,8 +254,7 @@ public class GameClient : MonoBehaviour
                 int deadId = r.ReadInt();
                 string leavingName = GetPlayerDisplayName(deadId);
                 RemovePlayer(deadId);
-                if (LeaderboardUI.Instance != null)
-                    LeaderboardUI.Instance.RemoveEntry(deadId);
+
                 if (GameLogUI.Instance != null)
                     GameLogUI.Instance.LogLeave(leavingName);
                 break;
@@ -283,8 +276,7 @@ public class GameClient : MonoBehaviour
                 int score = r.ReadInt();
                 SetBonusState(bonusId, false);
                 UpdateScore(who, score);
-                if (LeaderboardUI.Instance != null)
-                    LeaderboardUI.Instance.UpdateEntry(who, GetPlayerDisplayName(who), score);
+
                 if (GameLogUI.Instance != null)
                     GameLogUI.Instance.LogBonus(GetPlayerDisplayName(who), score);
                 if (who == _myId && _localPlayer != null)
