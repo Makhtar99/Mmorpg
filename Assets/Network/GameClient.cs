@@ -53,6 +53,32 @@ public class GameClient : MonoBehaviour
     void Awake()
     {
         Instance = this;
+
+        // Crée le LeaderboardUI persistant s'il n'existe pas encore
+        if (LeaderboardUI.Instance == null)
+        {
+            GameObject lb = new GameObject("LeaderboardUI");
+            lb.AddComponent<LeaderboardUI>();
+        }
+
+        // Crée le GameLogUI persistant s'il n'existe pas encore
+        if (GameLogUI.Instance == null)
+        {
+            GameObject log = new GameObject("GameLogUI");
+            log.AddComponent<GameLogUI>();
+        }
+
+        if (GameTimerUI.Instance == null)
+        {
+            GameObject timer = new GameObject("GameTimerUI");
+            timer.AddComponent<GameTimerUI>();
+        }
+
+        if (PlayerSpeedUI.Instance == null)
+        {
+            GameObject speed = new GameObject("PlayerSpeedUI");
+            speed.AddComponent<PlayerSpeedUI>();
+        }
     }
 
     void Start()
@@ -215,16 +241,29 @@ public class GameClient : MonoBehaviour
             case MessageType.Welcome:
                 _myId = r.ReadInt();
                 SpawnLocalPlayer();
+                if (LeaderboardUI.Instance != null)
+                    LeaderboardUI.Instance.SetLocalPlayer(_myId);
                 break;
 
             case MessageType.Spawn:
                 PlayerState s = r.ReadPlayerState();
-                if (s.Id != _myId) SpawnRemotePlayer(s);
+                if (s.Id != _myId)
+                {
+                    SpawnRemotePlayer(s);
+                    if (GameLogUI.Instance != null)
+                        GameLogUI.Instance.LogJoin(s.PlayerName);
+                }
                 else EnsureScoreboard().UpsertPlayer(s.Id, s.PlayerName, s.Score);
                 break;
 
             case MessageType.Despawn:
-                RemovePlayer(r.ReadInt());
+                int deadId = r.ReadInt();
+                string leavingName = GetPlayerDisplayName(deadId);
+                RemovePlayer(deadId);
+                if (LeaderboardUI.Instance != null)
+                    LeaderboardUI.Instance.RemoveEntry(deadId);
+                if (GameLogUI.Instance != null)
+                    GameLogUI.Instance.LogLeave(leavingName);
                 break;
 
             case MessageType.BonusState:
@@ -244,10 +283,46 @@ public class GameClient : MonoBehaviour
                 int score = r.ReadInt();
                 SetBonusState(bonusId, false);
                 UpdateScore(who, score);
+                if (LeaderboardUI.Instance != null)
+                    LeaderboardUI.Instance.UpdateEntry(who, GetPlayerDisplayName(who), score);
+                if (GameLogUI.Instance != null)
+                    GameLogUI.Instance.LogBonus(GetPlayerDisplayName(who), score);
+                if (who == _myId && _localPlayer != null)
+                {
+                    int boostLevel = score / 5;
+                    float multiplier = Mathf.Min(2.0f, Mathf.Pow(1.15f, boostLevel));
+                    _localPlayer.SetSpeedMultiplier(multiplier);
+                    if (PlayerSpeedUI.Instance != null)
+                        PlayerSpeedUI.Instance.SetMultiplier(multiplier);
+                }
                 break;
 
             case MessageType.BonusSpawn:
                 SetBonusState(r.ReadInt(), true, r.ReadVector3());
+                break;
+
+            case MessageType.TimerSync:
+                float remainingTime = r.ReadFloat();
+                if (GameTimerUI.Instance != null)
+                    GameTimerUI.Instance.SetRemainingTime(remainingTime);
+                break;
+
+            case MessageType.GameOver:
+                int topCount = r.ReadInt();
+                List<GameOverScreen.PlayerResult> topPlayers = new List<GameOverScreen.PlayerResult>();
+                for (int i = 0; i < topCount; i++)
+                {
+                    int rId = r.ReadInt();
+                    string rName = r.ReadString();
+                    int rScore = r.ReadInt();
+                    topPlayers.Add(new GameOverScreen.PlayerResult { Id = rId, Name = rName, Score = rScore });
+                }
+                if (GameOverScreen.Instance == null)
+                {
+                    GameObject go = new GameObject("GameOverScreen");
+                    go.AddComponent<GameOverScreen>();
+                }
+                GameOverScreen.Instance.Show(topPlayers);
                 break;
         }
     }
@@ -383,6 +458,19 @@ public class GameClient : MonoBehaviour
 
         CharacterScore cs = player.GetComponentInChildren<CharacterScore>();
         if (cs != null) cs.SetScore(score);
+    }
+
+    /// <summary>Retourne le nom d'affichage d'un joueur pour le classement.</summary>
+    public string GetPlayerDisplayName(int id)
+    {
+        if (id == _myId) return "Vous";
+        if (_remotePlayers.TryGetValue(id, out NetworkPlayer np))
+        {
+            CharacterScore cs = np.GetComponentInChildren<CharacterScore>();
+            if (cs != null && !string.IsNullOrEmpty(cs.PlayerName))
+                return cs.PlayerName;
+        }
+        return $"Joueur {id}";
     }
 
     private void SetBonusState(int bonusId, bool active)
