@@ -288,7 +288,13 @@ public class GameClient : MonoBehaviour
                 if (GameLogUI.Instance != null)
                     GameLogUI.Instance.LogBonus(GetPlayerDisplayName(who), score);
                 if (who == _myId && _localPlayer != null)
-                    _localPlayer.ApplySpeedBoost(1.15f);
+                {
+                    int boostLevel = score / 5;
+                    float multiplier = Mathf.Min(2.0f, Mathf.Pow(1.15f, boostLevel));
+                    _localPlayer.SetSpeedMultiplier(multiplier);
+                    if (PlayerSpeedUI.Instance != null)
+                        PlayerSpeedUI.Instance.SetMultiplier(multiplier);
+                }
                 break;
 
             case MessageType.BonusSpawn:

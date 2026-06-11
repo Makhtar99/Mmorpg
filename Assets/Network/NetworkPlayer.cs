@@ -20,6 +20,7 @@ public class NetworkPlayer : MonoBehaviour
     private Vector3 _targetPos;
     private float _targetYaw;
     private float _sendTimer;
+    private float _baseMoveSpeed;
 
     public void InitLocal(int id, GameClient client)
     {
@@ -32,6 +33,8 @@ public class NetworkPlayer : MonoBehaviour
         _input = new MetaverseInput();
         _move = _input.Player1.Move;
         _move.Enable();
+
+        _baseMoveSpeed = MoveSpeed;
     }
 
     public void InitRemote(int id, Vector3 pos, float yaw)
@@ -107,12 +110,12 @@ public class NetworkPlayer : MonoBehaviour
     }
 
     /// <summary>
-    /// Multiplie la vitesse de déplacement actuelle par le facteur donné.
-    /// L'effet est permanent jusqu'à la fin de la partie (pas de réinitialisation).
+    /// Définit le multiplicateur de vitesse de déplacement.
+    /// La vitesse de base est multipliée par ce facteur.
     /// </summary>
-    public void ApplySpeedBoost(float multiplier)
+    public void SetSpeedMultiplier(float multiplier)
     {
-        MoveSpeed *= multiplier;
+        MoveSpeed = _baseMoveSpeed * multiplier;
         Debug.Log($"[SpeedBoost] Nouvelle vitesse : {MoveSpeed:F2} (x{multiplier})");
     }
 
