@@ -6,8 +6,8 @@ public class NetworkPlayer : MonoBehaviour
     public int Id;
     public bool IsLocal;
 
-    public float MoveSpeed = 3f;
-    public float RotateSpeed = 250f;
+    public float MoveSpeed = 4.2f;
+    public float RotateSpeed = 300f;
     public float SendsPerSecond = 15f;
     public float InterpolationSpeed = 12f;
 

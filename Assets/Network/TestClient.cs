@@ -107,7 +107,7 @@ public class TestClient : MonoBehaviour
 
             case MessageType.Spawn:
                 PlayerState s = r.ReadPlayerState();
-                Debug.Log("Spawn player " + s.Id + " (character " + s.Character + ")");
+                Debug.Log("Spawn player " + s.Id + " (character " + s.Character + ", score " + s.Score + ")");
                 break;
 
             case MessageType.Despawn:
@@ -115,10 +115,16 @@ public class TestClient : MonoBehaviour
                 break;
 
             case MessageType.BonusState:
-                int taken = r.ReadInt();
-                string ids = "";
-                for (int i = 0; i < taken; i++) ids += r.ReadInt() + " ";
-                Debug.Log("BonusState: " + taken + " bonus already taken [ " + ids + "]");
+                int count = r.ReadInt();
+                string states = "";
+                for (int i = 0; i < count; i++)
+                {
+                    int bonusId = r.ReadInt();
+                    bool active = r.ReadByte() != 0;
+                    Vector3 position = r.ReadVector3();
+                    states += "[" + bonusId + " " + (active ? "active" : "inactive") + " @ " + position.ToString("F1") + "] ";
+                }
+                Debug.Log("BonusState: " + count + " bonuses " + states);
                 break;
 
             case MessageType.PickupAck:
@@ -126,6 +132,12 @@ public class TestClient : MonoBehaviour
                 int who = r.ReadInt();
                 int score = r.ReadInt();
                 Debug.Log("Bonus " + bonus + " taken by player " + who + " (score " + score + ")");
+                break;
+
+            case MessageType.BonusSpawn:
+                int spawnedBonus = r.ReadInt();
+                Vector3 spawnedPosition = r.ReadVector3();
+                Debug.Log("Bonus " + spawnedBonus + " respawned at " + spawnedPosition.ToString("F1"));
                 break;
         }
     }

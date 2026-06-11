@@ -153,8 +153,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterController
   Player: 0
-  WalkSpeed: 1
-  RotateSpeed: 250
+  WalkSpeed: 4.2
+  RotateSpeed: 300
 --- !u!4 &8230152200464682147 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7779442883182137201, guid: 1199db9163fc1024aa4ee121ef223ce4, type: 3}

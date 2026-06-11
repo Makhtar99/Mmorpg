@@ -17,6 +17,7 @@ public class GameClient : MonoBehaviour
     public GameObject[] CharacterPrefabs;
     public Transform SpawnPoint;
     public CinemachineCamera VirtualCamera;
+    public NetworkScoreboard Scoreboard;
 
     private TcpClient _tcp;
     private NetworkStream _stream;
@@ -33,11 +34,21 @@ public class GameClient : MonoBehaviour
     private NetworkPlayer _localPlayer;
     private readonly Dictionary<int, NetworkPlayer> _remotePlayers = new Dictionary<int, NetworkPlayer>();
     private readonly Dictionary<int, Bonus> _bonuses = new Dictionary<int, Bonus>();
+    private readonly HashSet<int> _dynamicBonusIds = new HashSet<int>();
+    private readonly Dictionary<int, BonusVisualState> _pendingBonusStates = new Dictionary<int, BonusVisualState>();
+    private Bonus _bonusPrototype;
+
+    private struct BonusVisualState
+    {
+        public bool Active;
+        public Vector3 Position;
+    }
 
     public int MyId => _myId;
     public bool IsConnected => _connected;
     public bool HasLocalPlayer => _localPlayer != null;
     public int RemotePlayerCount => _remotePlayers.Count;
+    public int RegisteredBonusCount => _bonuses.Count;
 
     void Awake()
     {
@@ -129,10 +140,33 @@ public class GameClient : MonoBehaviour
 
     public void RegisterBonus(Bonus bonus)
     {
+        if (bonus == null)
+        {
+            return;
+        }
+
         _bonuses[bonus.BonusId] = bonus;
+
+        if (_bonusPrototype == null && !_dynamicBonusIds.Contains(bonus.BonusId))
+        {
+            _bonusPrototype = bonus;
+            ApplyPendingBonusStates();
+        }
+
+        if (_pendingBonusStates.TryGetValue(bonus.BonusId, out BonusVisualState state))
+        {
+            ApplyBonusState(bonus, state.Active, state.Position);
+            _pendingBonusStates.Remove(bonus.BonusId);
+        }
     }
 
     public bool HasRemotePlayer(int id) => _remotePlayers.ContainsKey(id);
+
+    public Bonus GetBonus(int id)
+    {
+        _bonuses.TryGetValue(id, out Bonus bonus);
+        return bonus;
+    }
 
     public NetworkPlayer GetRemotePlayer(int id)
     {
@@ -186,6 +220,7 @@ public class GameClient : MonoBehaviour
             case MessageType.Spawn:
                 PlayerState s = r.ReadPlayerState();
                 if (s.Id != _myId) SpawnRemotePlayer(s);
+                else EnsureScoreboard().UpsertPlayer(s.Id, s.PlayerName, s.Score);
                 break;
 
             case MessageType.Despawn:
@@ -194,15 +229,25 @@ public class GameClient : MonoBehaviour
 
             case MessageType.BonusState:
                 int count = r.ReadInt();
-                for (int i = 0; i < count; i++) DestroyBonus(r.ReadInt());
+                for (int i = 0; i < count; i++)
+                {
+                    int stateBonusId = r.ReadInt();
+                    bool active = r.ReadByte() != 0;
+                    Vector3 position = r.ReadVector3();
+                    SetBonusState(stateBonusId, active, position);
+                }
                 break;
 
             case MessageType.PickupAck:
                 int bonusId = r.ReadInt();
                 int who = r.ReadInt();
                 int score = r.ReadInt();
-                DestroyBonus(bonusId);
+                SetBonusState(bonusId, false);
                 UpdateScore(who, score);
+                break;
+
+            case MessageType.BonusSpawn:
+                SetBonusState(r.ReadInt(), true, r.ReadVector3());
                 break;
         }
     }
@@ -256,6 +301,7 @@ public class GameClient : MonoBehaviour
         if (_localPlayer == null) _localPlayer = go.AddComponent<NetworkPlayer>();
         _localPlayer.InitLocal(_myId, this);
         ApplyPlayerName(_localPlayer, PlayerName);
+        EnsureScoreboard().UpsertPlayer(_myId, PlayerName, 0);
 
         PointCameraAt(go.transform);
     }
@@ -284,8 +330,10 @@ public class GameClient : MonoBehaviour
         if (np == null) np = go.AddComponent<NetworkPlayer>();
         np.InitRemote(s.Id, s.Position, s.Yaw);
         ApplyPlayerName(np, s.PlayerName);
+        ApplyPlayerScore(np, s.Score);
 
         _remotePlayers[s.Id] = np;
+        EnsureScoreboard().UpsertPlayer(s.Id, s.PlayerName, s.Score);
     }
 
     private static void ApplyPlayerName(NetworkPlayer player, string playerName)
@@ -311,6 +359,9 @@ public class GameClient : MonoBehaviour
             DestroyGameObject(np.gameObject);
             _remotePlayers.Remove(id);
         }
+
+        if (Scoreboard != null)
+            Scoreboard.RemovePlayer(id);
     }
 
     private void UpdateScore(int playerId, int score)
@@ -319,19 +370,87 @@ public class GameClient : MonoBehaviour
         if (playerId == _myId) np = _localPlayer;
         else _remotePlayers.TryGetValue(playerId, out np);
 
+        EnsureScoreboard().UpdateScore(playerId, score);
+
         if (np == null) return;
 
-        CharacterScore cs = np.GetComponentInChildren<CharacterScore>();
+        ApplyPlayerScore(np, score);
+    }
+
+    private static void ApplyPlayerScore(NetworkPlayer player, int score)
+    {
+        if (player == null) return;
+
+        CharacterScore cs = player.GetComponentInChildren<CharacterScore>();
         if (cs != null) cs.SetScore(score);
     }
 
-    private void DestroyBonus(int bonusId)
+    private void SetBonusState(int bonusId, bool active)
     {
-        if (_bonuses.TryGetValue(bonusId, out Bonus b))
+        if (_bonuses.TryGetValue(bonusId, out Bonus bonus) && bonus != null)
         {
-            if (b != null) Destroy(b.gameObject);
-            _bonuses.Remove(bonusId);
+            bonus.gameObject.SetActive(active);
         }
+    }
+
+    private void SetBonusState(int bonusId, bool active, Vector3 position)
+    {
+        Bonus bonus = GetOrCreateBonus(bonusId);
+        if (bonus != null)
+        {
+            ApplyBonusState(bonus, active, position);
+            return;
+        }
+
+        _pendingBonusStates[bonusId] = new BonusVisualState
+        {
+            Active = active,
+            Position = position,
+        };
+    }
+
+    private Bonus GetOrCreateBonus(int bonusId)
+    {
+        if (_bonuses.TryGetValue(bonusId, out Bonus existing) && existing != null)
+            return existing;
+
+        if (_bonusPrototype == null)
+            return null;
+
+        GameObject clone = Instantiate(_bonusPrototype.gameObject, _bonusPrototype.transform.parent);
+        clone.name = "Dynamic Bonus " + bonusId;
+
+        Bonus bonus = clone.GetComponent<Bonus>();
+        if (bonus == null)
+            bonus = clone.AddComponent<Bonus>();
+
+        bonus.BonusId = bonusId;
+        _dynamicBonusIds.Add(bonusId);
+        RegisterBonus(bonus);
+        return bonus;
+    }
+
+    private void ApplyPendingBonusStates()
+    {
+        if (_bonusPrototype == null || _pendingBonusStates.Count == 0)
+            return;
+
+        var pendingStates = new List<KeyValuePair<int, BonusVisualState>>(_pendingBonusStates);
+        foreach (KeyValuePair<int, BonusVisualState> pending in pendingStates)
+        {
+            Bonus bonus = GetOrCreateBonus(pending.Key);
+            if (bonus == null)
+                continue;
+
+            ApplyBonusState(bonus, pending.Value.Active, pending.Value.Position);
+            _pendingBonusStates.Remove(pending.Key);
+        }
+    }
+
+    private static void ApplyBonusState(Bonus bonus, bool active, Vector3 position)
+    {
+        bonus.transform.position = position;
+        bonus.gameObject.SetActive(active);
     }
 
     private GameObject PrefabFor(byte character)
@@ -387,7 +506,37 @@ public class GameClient : MonoBehaviour
         }
 
         _remotePlayers.Clear();
+        if (Scoreboard != null)
+            Scoreboard.Clear();
+        ClearDynamicBonuses();
         _myId = 0;
+    }
+
+    private NetworkScoreboard EnsureScoreboard()
+    {
+        if (Scoreboard != null) return Scoreboard;
+
+        Scoreboard = GetComponent<NetworkScoreboard>();
+        if (Scoreboard == null)
+            Scoreboard = gameObject.AddComponent<NetworkScoreboard>();
+
+        return Scoreboard;
+    }
+
+    private void ClearDynamicBonuses()
+    {
+        foreach (int bonusId in _dynamicBonusIds)
+        {
+            if (_bonuses.TryGetValue(bonusId, out Bonus bonus) && bonus != null)
+            {
+                DestroyGameObject(bonus.gameObject);
+            }
+
+            _bonuses.Remove(bonusId);
+        }
+
+        _dynamicBonusIds.Clear();
+        _pendingBonusStates.Clear();
     }
 
     private static bool IsTcpClosed(TcpClient client)

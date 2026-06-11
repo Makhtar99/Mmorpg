@@ -95,8 +95,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Player: 1
-  WalkSpeed: 3
-  RotateSpeed: 250
+  WalkSpeed: 4.2
+  RotateSpeed: 300
 --- !u!54 &270144997506440257
 Rigidbody:
   m_ObjectHideFlags: 0

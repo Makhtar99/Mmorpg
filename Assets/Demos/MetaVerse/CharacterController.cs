@@ -9,8 +9,8 @@ public enum CharacterPlayer {
 public class CharacterController : MonoBehaviour
 {
     public CharacterPlayer Player = CharacterPlayer.Player1;
-    public float WalkSpeed = 3;
-    public float RotateSpeed = 250;
+    public float WalkSpeed = 4.2f;
+    public float RotateSpeed = 300;
     Animator Anim;
     MetaverseInput inputs;
     InputAction PlayerAction;
