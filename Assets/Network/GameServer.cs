@@ -9,6 +9,16 @@ public class GameServer : MonoBehaviour
     public float SnapshotsPerSecond = 20f;
     public int FullSnapshotEvery = 30;
     public bool AutoStart = false;
+    public float BonusRespawnDelaySeconds = 5f;
+    public Transform[] BonusSpawnPoints;
+    public int TargetActiveBonusCount = 500;
+    public int MinimumActiveBonusCount = 500;
+    public bool RandomizeInitialBonusPositions = true;
+    public Vector3 BonusSpawnAreaCenter = new Vector3(240.5f, 0f, 254.2f);
+    public Vector2 BonusSpawnAreaSize = new Vector2(345f, 312f);
+    public float BonusSpawnHeightOffset = 0.28f;
+    public float BonusSpawnRaycastHeight = 50f;
+    public LayerMask BonusSpawnGroundLayers = -1;
 
     private class Client
     {
@@ -23,16 +33,28 @@ public class GameServer : MonoBehaviour
         public readonly PacketFramer Framer = new PacketFramer();
     }
 
+    private class BonusRuntimeState
+    {
+        public int Id;
+        public Vector3 Position;
+        public int Points;
+        public bool Active = true;
+        public float RespawnTimeRemaining;
+    }
+
     private TcpListener _tcpListener;
     private UdpClient _udp;
     private IPEndPoint _udpSource = new IPEndPoint(IPAddress.Any, 0);
 
     private readonly Dictionary<int, Client> _clients = new Dictionary<int, Client>();
-    private readonly HashSet<int> _takenBonuses = new HashSet<int>();
+    private readonly Dictionary<int, BonusRuntimeState> _bonusStates = new Dictionary<int, BonusRuntimeState>();
+    private readonly List<Vector3> _bonusSpawnPositions = new List<Vector3>();
 
     private int _nextId = 1;
+    private int _nextBonusId;
     private float _snapshotTimer;
     private int _snapshotCounter;
+    private bool _bonusStatesInitialized;
 
     public bool IsRunning => _tcpListener != null;
 
@@ -59,6 +81,7 @@ public class GameServer : MonoBehaviour
             _udp.Client.Bind(new IPEndPoint(IPAddress.Any, Port));
 
             Debug.Log("Server started on port " + Port);
+            InitializeBonusStatesFromScene();
             return true;
         }
         catch (System.Exception ex)
@@ -76,6 +99,7 @@ public class GameServer : MonoBehaviour
         AcceptConnections();
         ReceiveTcp();
         ReceiveUdp();
+        UpdateBonusRespawns();
 
         _snapshotTimer += Time.deltaTime;
         if (_snapshotTimer >= 1f / SnapshotsPerSecond)
@@ -100,6 +124,9 @@ public class GameServer : MonoBehaviour
             try { c.Tcp.Close(); } catch { }
         }
         _clients.Clear();
+        _bonusStates.Clear();
+        _bonusSpawnPositions.Clear();
+        _bonusStatesInitialized = false;
     }
 
     private void AcceptConnections()
@@ -119,6 +146,7 @@ public class GameServer : MonoBehaviour
                     Id = id,
                     Character = 0,
                     PlayerName = PlayerNames.DefaultName,
+                    Score = 0,
                     Position = SpawnPosition(id),
                     Yaw = 0f,
                 },
@@ -236,10 +264,13 @@ public class GameServer : MonoBehaviour
 
     private void HandlePickup(Client c, int bonusId)
     {
-        if (_takenBonuses.Contains(bonusId)) return;
+        BonusRuntimeState bonus = EnsureBonusState(bonusId);
+        if (!bonus.Active) return;
 
-        _takenBonuses.Add(bonusId);
-        c.Score += 1;
+        bonus.Active = false;
+        bonus.RespawnTimeRemaining = Mathf.Max(0f, BonusRespawnDelaySeconds);
+        c.Score += Mathf.Max(1, bonus.Points);
+        c.State.Score = c.Score;
 
         PacketWriter w = new PacketWriter(MessageType.PickupAck);
         w.WriteInt(bonusId);
@@ -257,11 +288,186 @@ public class GameServer : MonoBehaviour
 
     private void SendBonusState(Client c)
     {
+        InitializeBonusStatesFromScene();
+
         PacketWriter w = new PacketWriter(MessageType.BonusState);
-        w.WriteInt(_takenBonuses.Count);
-        foreach (int bonusId in _takenBonuses)
-            w.WriteInt(bonusId);
+        w.WriteInt(_bonusStates.Count);
+        foreach (BonusRuntimeState bonus in _bonusStates.Values)
+        {
+            w.WriteInt(bonus.Id);
+            w.WriteByte(bonus.Active ? (byte)1 : (byte)0);
+            w.WriteVector3(bonus.Position);
+        }
         SendTcp(c, w.ToBytes());
+    }
+
+    private void InitializeBonusStatesFromScene()
+    {
+        if (_bonusStatesInitialized) return;
+
+        _bonusStatesInitialized = true;
+        _bonusStates.Clear();
+        _bonusSpawnPositions.Clear();
+
+        ConfigureBonusSpawnAreaFromTerrain();
+
+        if (BonusSpawnPoints != null)
+        {
+            foreach (Transform spawnPoint in BonusSpawnPoints)
+            {
+                if (spawnPoint != null)
+                    AddBonusSpawnPosition(spawnPoint.position);
+            }
+        }
+
+        Bonus[] sceneBonuses = FindObjectsByType<Bonus>(FindObjectsInactive.Include);
+        foreach (Bonus sceneBonus in sceneBonuses)
+        {
+            Vector3 scenePosition = sceneBonus.transform.position;
+            AddBonusSpawnPosition(scenePosition);
+
+            if (_bonusStates.ContainsKey(sceneBonus.BonusId)) continue;
+
+            Vector3 position = RandomizeInitialBonusPositions ? SelectBonusSpawnPosition() : scenePosition;
+            _bonusStates.Add(sceneBonus.BonusId, CreateBonusState(sceneBonus.BonusId, position, sceneBonus.Points));
+            _nextBonusId = Mathf.Max(_nextBonusId, sceneBonus.BonusId + 1);
+        }
+
+        EnsureTargetBonusCount();
+        Debug.Log("Bonus pool initialized: " + _bonusStates.Count + " bonuses (target " + TargetActiveBonusCount + ", minimum " + MinimumActiveBonusCount + ") across area center " + BonusSpawnAreaCenter + " size " + BonusSpawnAreaSize);
+    }
+
+    private BonusRuntimeState EnsureBonusState(int bonusId)
+    {
+        InitializeBonusStatesFromScene();
+
+        if (_bonusStates.TryGetValue(bonusId, out BonusRuntimeState existing))
+            return existing;
+
+        Vector3 position = SelectBonusSpawnPosition();
+        AddBonusSpawnPosition(position);
+
+        var created = CreateBonusState(bonusId, position, 1);
+        _bonusStates.Add(bonusId, created);
+        _nextBonusId = Mathf.Max(_nextBonusId, bonusId + 1);
+        return created;
+    }
+
+    private void EnsureTargetBonusCount()
+    {
+        int configuredTargetCount = Mathf.Max(0, TargetActiveBonusCount);
+        int minimumTargetCount = Mathf.Max(0, MinimumActiveBonusCount);
+        int targetCount = Mathf.Max(configuredTargetCount, minimumTargetCount);
+        while (_bonusStates.Count < targetCount)
+        {
+            int bonusId = _nextBonusId++;
+            _bonusStates.Add(bonusId, CreateBonusState(bonusId, SelectBonusSpawnPosition(), 1));
+        }
+    }
+
+    private static BonusRuntimeState CreateBonusState(int id, Vector3 position, int points)
+    {
+        return new BonusRuntimeState
+        {
+            Id = id,
+            Position = position,
+            Points = Mathf.Max(1, points),
+            Active = true,
+        };
+    }
+
+    private void UpdateBonusRespawns()
+    {
+        if (_bonusStates.Count == 0) return;
+
+        List<BonusRuntimeState> respawned = null;
+
+        foreach (BonusRuntimeState bonus in _bonusStates.Values)
+        {
+            if (bonus.Active) continue;
+
+            if (BonusRespawnDelaySeconds > 0f)
+                bonus.RespawnTimeRemaining -= Time.deltaTime;
+
+            if (BonusRespawnDelaySeconds > 0f && bonus.RespawnTimeRemaining > 0f)
+                continue;
+
+            bonus.Active = true;
+            bonus.Position = SelectBonusSpawnPosition();
+            (respawned ??= new List<BonusRuntimeState>()).Add(bonus);
+        }
+
+        if (respawned == null) return;
+
+        foreach (BonusRuntimeState bonus in respawned)
+            BroadcastBonusSpawn(bonus);
+    }
+
+    private void BroadcastBonusSpawn(BonusRuntimeState bonus)
+    {
+        PacketWriter w = new PacketWriter(MessageType.BonusSpawn);
+        w.WriteInt(bonus.Id);
+        w.WriteVector3(bonus.Position);
+        BroadcastTcp(w.ToBytes());
+    }
+
+    private Vector3 SelectBonusSpawnPosition()
+    {
+        if (BonusSpawnAreaSize.x > 0f && BonusSpawnAreaSize.y > 0f)
+            return SelectRandomBonusSpawnPosition();
+
+        if (_bonusSpawnPositions.Count == 0)
+            return Vector3.zero;
+
+        return _bonusSpawnPositions[Random.Range(0, _bonusSpawnPositions.Count)];
+    }
+
+    private Vector3 SelectRandomBonusSpawnPosition()
+    {
+        float halfWidth = BonusSpawnAreaSize.x * 0.5f;
+        float halfDepth = BonusSpawnAreaSize.y * 0.5f;
+        float x = Random.Range(BonusSpawnAreaCenter.x - halfWidth, BonusSpawnAreaCenter.x + halfWidth);
+        float z = Random.Range(BonusSpawnAreaCenter.z - halfDepth, BonusSpawnAreaCenter.z + halfDepth);
+        Vector3 fallback = new Vector3(x, BonusSpawnAreaCenter.y + BonusSpawnHeightOffset, z);
+
+        if (BonusSpawnGroundLayers.value == 0 || BonusSpawnRaycastHeight <= 0f)
+            return fallback;
+
+        Vector3 origin = new Vector3(x, BonusSpawnAreaCenter.y + BonusSpawnRaycastHeight, z);
+        float distance = BonusSpawnRaycastHeight * 2f;
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, distance, BonusSpawnGroundLayers, QueryTriggerInteraction.Ignore))
+            return hit.point + Vector3.up * BonusSpawnHeightOffset;
+
+        return fallback;
+    }
+
+    private void AddBonusSpawnPosition(Vector3 position)
+    {
+        foreach (Vector3 existing in _bonusSpawnPositions)
+        {
+            if ((existing - position).sqrMagnitude < 0.0001f)
+                return;
+        }
+
+        _bonusSpawnPositions.Add(position);
+    }
+
+    private void ConfigureBonusSpawnAreaFromTerrain()
+    {
+        if (BonusSpawnAreaSize.x > 0f && BonusSpawnAreaSize.y > 0f)
+            return;
+
+        Terrain terrain = Terrain.activeTerrain;
+        if (terrain == null)
+            terrain = FindAnyObjectByType<Terrain>();
+
+        if (terrain == null || terrain.terrainData == null)
+            return;
+
+        Vector3 terrainPosition = terrain.transform.position;
+        Vector3 terrainSize = terrain.terrainData.size;
+        BonusSpawnAreaCenter = terrainPosition + new Vector3(terrainSize.x * 0.5f, 0f, terrainSize.z * 0.5f);
+        BonusSpawnAreaSize = new Vector2(terrainSize.x, terrainSize.z);
     }
 
     private void SendExistingPlayersTo(Client newClient)

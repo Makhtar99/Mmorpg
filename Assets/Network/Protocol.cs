@@ -15,6 +15,7 @@ public enum MessageType : byte
     PickupAck     = 8,
     BonusState    = 9,
     ObjectState   = 10,
+    BonusSpawn    = 11,
 }
 
 public struct PlayerState
@@ -22,6 +23,7 @@ public struct PlayerState
     public int Id;
     public byte Character;
     public string PlayerName;
+    public int Score;
     public Vector3 Position;
     public float Yaw;
 }
@@ -86,6 +88,7 @@ public class PacketWriter
         WriteInt(p.Id);
         WriteByte(p.Character);
         WriteString(PlayerNames.Normalize(p.PlayerName));
+        WriteInt(p.Score);
         WriteVector3(p.Position);
         WriteFloat(p.Yaw);
     }
@@ -177,6 +180,7 @@ public class PacketReader
             Id = ReadInt(),
             Character = ReadByte(),
             PlayerName = PlayerNames.Normalize(ReadString()),
+            Score = ReadInt(),
             Position = ReadVector3(),
             Yaw = ReadFloat(),
         };

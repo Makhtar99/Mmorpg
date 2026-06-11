@@ -28,6 +28,9 @@ public class NetworkDespawnTests
     GameObject launcherObject;
     GameObject prefabObject;
     GameObject menuObject;
+    GameObject bonusObject;
+    GameObject secondBonusObject;
+    GameObject terrainObject;
 
     [TearDown]
     public void TearDown()
@@ -35,6 +38,9 @@ public class NetworkDespawnTests
         NetworkSceneLoader.Reset();
         NetworkSessionRequest.Clear();
 
+        if (secondBonusObject != null) UnityEngine.Object.DestroyImmediate(secondBonusObject);
+        if (bonusObject != null) UnityEngine.Object.DestroyImmediate(bonusObject);
+        if (terrainObject != null) UnityEngine.Object.DestroyImmediate(terrainObject);
         if (menuObject != null) UnityEngine.Object.DestroyImmediate(menuObject);
         if (launcherObject != null) UnityEngine.Object.DestroyImmediate(launcherObject);
         if (clientObject != null) UnityEngine.Object.DestroyImmediate(clientObject);
@@ -103,6 +109,33 @@ public class NetworkDespawnTests
         Assert.That(score.PlayerName, Is.EqualTo("Samy"));
         Assert.That(score.TxtName, Is.Not.Null);
         Assert.That(score.TxtName.text, Is.EqualTo("Samy"));
+    }
+
+    [Test]
+    public void GameClient_ScoreboardUpdatesLocalPlayerWhenScoreChanges()
+    {
+        GameClient client = CreateGameClientWithPrefab();
+        client.PlayerName = "Samy";
+
+        InvokeClientPacket(client, WelcomePacket(playerId: 1));
+        InvokeClientPacket(client, PickupAckPacket(bonusId: 3, playerId: 1, score: 5));
+
+        Assert.That(client.Scoreboard, Is.Not.Null);
+        Assert.That(client.Scoreboard.DisplayText.text, Does.Contain("Samy 5"));
+    }
+
+    [Test]
+    public void GameClient_ScoreboardTracksRemoteSpawnAndDespawn()
+    {
+        GameClient client = CreateGameClientWithPrefab();
+
+        InvokeClientPacket(client, SpawnPacket(playerId: 7, character: 0, playerName: "Nora", score: 4));
+
+        Assert.That(client.Scoreboard.DisplayText.text, Does.Contain("Nora 4"));
+
+        InvokeClientPacket(client, DespawnPacket(7));
+
+        Assert.That(client.Scoreboard.DisplayText.text, Does.Not.Contain("Nora 4"));
     }
 
     [Test]
@@ -332,6 +365,7 @@ public class NetworkDespawnTests
                 Id = 9,
                 Character = 2,
                 PlayerName = "Samy",
+                Score = 12,
                 Position = new Vector3(1f, 2f, 3f),
                 Yaw = 45f,
             });
@@ -342,6 +376,7 @@ public class NetworkDespawnTests
         Assert.That(state.Id, Is.EqualTo(9));
         Assert.That(state.Character, Is.EqualTo((byte)2));
         Assert.That(state.PlayerName, Is.EqualTo("Samy"));
+        Assert.That(state.Score, Is.EqualTo(12));
         Assert.That(state.Position, Is.EqualTo(new Vector3(1f, 2f, 3f)));
         Assert.That(state.Yaw, Is.EqualTo(45f));
     }
@@ -362,6 +397,53 @@ public class NetworkDespawnTests
 
         Assert.That(existingPlayer.Id, Is.EqualTo(1));
         Assert.That(existingPlayer.PlayerName, Is.EqualTo("Samy"));
+    }
+
+    [Test]
+    public void Server_SendsExistingPlayerScoreToJoiningClient()
+    {
+        int port = FindFreePort();
+        GameServer server = CreateServer(
+            port,
+            server =>
+            {
+                server.TargetActiveBonusCount = 1;
+                server.MinimumActiveBonusCount = 0;
+                server.BonusSpawnAreaCenter = new Vector3(100f, 0f, 200f);
+                server.BonusSpawnAreaSize = new Vector2(30f, 40f);
+                server.BonusSpawnGroundLayers = 0;
+            });
+        using TcpClient firstClient = ConnectRawClient(port, character: 0, playerName: "Samy");
+        ReadWelcome(firstClient, () => PumpServer(server));
+
+        SendPickupRequest(firstClient, bonusId: 0);
+        WaitForPacket(firstClient, MessageType.PickupAck, () => PumpServer(server));
+
+        using TcpClient secondClient = ConnectRawClient(port, character: 1, playerName: "Nora");
+        ReadWelcome(secondClient, () => PumpServer(server));
+
+        PacketReader spawn = WaitForPacket(secondClient, MessageType.Spawn, () => PumpServer(server));
+        PlayerState existingPlayer = spawn.ReadPlayerState();
+
+        Assert.That(existingPlayer.Id, Is.EqualTo(1));
+        Assert.That(existingPlayer.PlayerName, Is.EqualTo("Samy"));
+        Assert.That(existingPlayer.Score, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void NetworkScoreboard_RendersPlayersSortedByScore()
+    {
+        menuObject = new GameObject("scoreboard");
+        NetworkScoreboard scoreboard = menuObject.AddComponent<NetworkScoreboard>();
+
+        scoreboard.UpsertPlayer(1, "Samy", 2);
+        scoreboard.UpsertPlayer(2, "Nora", 7);
+        scoreboard.UpsertPlayer(3, "Alex", 4);
+
+        string rendered = scoreboard.DisplayText.text;
+
+        Assert.That(rendered.IndexOf("Nora 7", StringComparison.Ordinal), Is.LessThan(rendered.IndexOf("Alex 4", StringComparison.Ordinal)));
+        Assert.That(rendered.IndexOf("Alex 4", StringComparison.Ordinal), Is.LessThan(rendered.IndexOf("Samy 2", StringComparison.Ordinal)));
     }
 
     [Test]
@@ -551,11 +633,314 @@ public class NetworkDespawnTests
         Assert.That(launcher.AutoStartPendingSession, Is.True);
     }
 
-    GameServer CreateServer(int port)
+    [Test]
+    public void MetaVerseScene_SerializesDynamicBonusPoolSettings()
+    {
+        string sceneYaml = File.ReadAllText("Assets/Demos/MetaVerse/MetaVerse.unity");
+
+        Assert.That(sceneYaml, Does.Contain("TargetActiveBonusCount: 500"));
+        Assert.That(sceneYaml, Does.Contain("MinimumActiveBonusCount: 500"));
+        Assert.That(sceneYaml, Does.Contain("RandomizeInitialBonusPositions: 1"));
+        Assert.That(sceneYaml, Does.Contain("BonusSpawnAreaCenter: {x: 240.5, y: 0, z: 254.2}"));
+        Assert.That(sceneYaml, Does.Contain("BonusSpawnAreaSize: {x: 345, y: 312}"));
+    }
+
+    [Test]
+    public void CharacterMovementSpeedUsesPlayableIntermediateValue()
+    {
+        var networkPlayerObject = new GameObject("network player");
+        NetworkPlayer networkPlayer = networkPlayerObject.AddComponent<NetworkPlayer>();
+        menuObject = networkPlayerObject;
+
+        Assert.That(networkPlayer.MoveSpeed, Is.EqualTo(4.2f).Within(0.001f));
+        Assert.That(networkPlayer.RotateSpeed, Is.EqualTo(300f).Within(0.001f));
+
+        string[] prefabPaths =
+        {
+            "Assets/Demos/MetaVerse/Prefabs/barbarian.prefab",
+            "Assets/Demos/MetaVerse/Prefabs/engineer.prefab",
+            "Assets/Demos/MetaVerse/Prefabs/druid.prefab",
+            "Assets/Demos/MetaVerse/Prefabs/knight.prefab",
+            "Assets/Demos/MetaVerse/Prefabs/mage.prefab",
+            "Assets/Demos/MetaVerse/Prefabs/rogue.prefab",
+        };
+
+        foreach (string prefabPath in prefabPaths)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            CharacterController controller = prefab.GetComponent<CharacterController>();
+
+            Assert.That(prefab, Is.Not.Null);
+            Assert.That(controller, Is.Not.Null);
+            Assert.That(controller.WalkSpeed, Is.EqualTo(4.2f).Within(0.001f));
+            Assert.That(controller.RotateSpeed, Is.EqualTo(300f).Within(0.001f));
+        }
+    }
+
+    [Test]
+    public void GameClient_DeactivatesBonusWhenPickupAckArrives()
+    {
+        GameClient client = CreateGameClientWithPrefab();
+        Bonus bonus = CreateRegisteredBonus(client, 3, new Vector3(1f, 0f, 2f));
+
+        InvokeClientPacket(client, PickupAckPacket(bonusId: 3, playerId: 1, score: 1));
+
+        Assert.That(bonus == null, Is.False);
+        Assert.That(bonus.gameObject.activeSelf, Is.False);
+    }
+
+    [Test]
+    public void GameClient_RespawnsBonusWhenBonusSpawnArrives()
+    {
+        GameClient client = CreateGameClientWithPrefab();
+        Bonus bonus = CreateRegisteredBonus(client, 4, Vector3.zero);
+        bonus.gameObject.SetActive(false);
+
+        InvokeClientPacket(client, BonusSpawnPacket(4, new Vector3(5f, 0f, 6f)));
+
+        Assert.That(bonus.gameObject.activeSelf, Is.True);
+        Assert.That(Vector3.Distance(bonus.transform.position, new Vector3(5f, 0f, 6f)), Is.LessThan(0.01f));
+    }
+
+    [Test]
+    public void GameClient_AppliesBonusStateWithActiveFlagsAndPositions()
+    {
+        GameClient client = CreateGameClientWithPrefab();
+        Bonus inactiveBonus = CreateRegisteredBonus(client, 5, Vector3.zero);
+        Bonus activeBonus = CreateRegisteredBonus(client, 6, Vector3.zero, useSecondObject: true);
+
+        InvokeClientPacket(
+            client,
+            BonusStatePacket(
+                (5, false, new Vector3(1f, 0f, 1f)),
+                (6, true, new Vector3(2f, 0f, 2f))));
+
+        Assert.That(inactiveBonus.gameObject.activeSelf, Is.False);
+        Assert.That(activeBonus.gameObject.activeSelf, Is.True);
+        Assert.That(Vector3.Distance(activeBonus.transform.position, new Vector3(2f, 0f, 2f)), Is.LessThan(0.01f));
+    }
+
+    [Test]
+    public void GameClient_CreatesMissingBonusObjectsFromRegisteredPrototype()
+    {
+        GameClient client = CreateGameClientWithPrefab();
+        CreateRegisteredBonus(client, 0, Vector3.zero);
+
+        InvokeClientPacket(
+            client,
+            BonusStatePacket(
+                (0, true, new Vector3(1f, 0f, 1f)),
+                (7, true, new Vector3(12f, 0f, 18f)),
+                (8, false, new Vector3(14f, 0f, 20f))));
+
+        Bonus clonedActiveBonus = client.GetBonus(7);
+        Bonus clonedInactiveBonus = client.GetBonus(8);
+
+        Assert.That(client.RegisteredBonusCount, Is.EqualTo(3));
+        Assert.That(clonedActiveBonus, Is.Not.Null);
+        Assert.That(clonedActiveBonus.gameObject.activeSelf, Is.True);
+        Assert.That(Vector3.Distance(clonedActiveBonus.transform.position, new Vector3(12f, 0f, 18f)), Is.LessThan(0.01f));
+        Assert.That(clonedInactiveBonus, Is.Not.Null);
+        Assert.That(clonedInactiveBonus.gameObject.activeSelf, Is.False);
+    }
+
+    [Test]
+    public void GameClient_CreatesLargeBonusPoolFromSingleRegisteredPrototype()
+    {
+        GameClient client = CreateGameClientWithPrefab();
+        Bonus prototype = CreateRegisteredBonus(client, 0, Vector3.zero);
+        prototype.transform.SetParent(clientObject.transform);
+
+        var states = new (int id, bool active, Vector3 position)[500];
+        for (int i = 0; i < states.Length; i++)
+        {
+            states[i] = (i, true, new Vector3(i, 0.25f, i + 1f));
+        }
+
+        InvokeClientPacket(client, BonusStatePacket(states));
+
+        Assert.That(client.RegisteredBonusCount, Is.EqualTo(500));
+        Assert.That(client.GetBonus(499), Is.Not.Null);
+        Assert.That(client.GetBonus(499).gameObject.activeSelf, Is.True);
+        Assert.That(Vector3.Distance(client.GetBonus(499).transform.position, new Vector3(499f, 0.25f, 500f)), Is.LessThan(0.01f));
+    }
+
+    [Test]
+    public void Server_BroadcastsBonusSpawnAfterRespawnDelay()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        int port = FindFreePort();
+        GameServer server = CreateServer(
+            port,
+            server =>
+            {
+                server.BonusRespawnDelaySeconds = 0f;
+                server.TargetActiveBonusCount = 0;
+                server.MinimumActiveBonusCount = 0;
+                server.BonusSpawnAreaCenter = new Vector3(100f, 0f, 200f);
+                server.BonusSpawnAreaSize = new Vector2(30f, 40f);
+                server.BonusSpawnHeightOffset = 0.25f;
+                server.BonusSpawnGroundLayers = 0;
+            });
+
+        using TcpClient firstClient = ConnectRawClient(port, character: 0);
+        ReadWelcome(firstClient, () => PumpServer(server));
+        using TcpClient secondClient = ConnectRawClient(port, character: 1);
+        ReadWelcome(secondClient, () => PumpServer(server));
+
+        SendPickupRequest(firstClient, bonusId: 42);
+
+        PacketReader bonusSpawn = WaitForPacket(secondClient, MessageType.BonusSpawn, () => PumpServer(server));
+
+        Assert.That(bonusSpawn.ReadInt(), Is.EqualTo(42));
+        AssertPositionInsideArea(
+            bonusSpawn.ReadVector3(),
+            new Vector3(100f, 0f, 200f),
+            new Vector2(30f, 40f),
+            0.25f);
+    }
+
+    [Test]
+    public void Server_SendsConfiguredActiveBonusPoolInsideMapArea()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        int port = FindFreePort();
+        GameServer server = CreateServer(
+            port,
+            server =>
+            {
+                server.TargetActiveBonusCount = 12;
+                server.MinimumActiveBonusCount = 0;
+                server.BonusSpawnAreaCenter = new Vector3(100f, 0f, 200f);
+                server.BonusSpawnAreaSize = new Vector2(30f, 40f);
+                server.BonusSpawnHeightOffset = 0.25f;
+                server.BonusSpawnGroundLayers = 0;
+            });
+
+        using TcpClient client = ConnectRawClient(port, character: 0);
+        ReadWelcome(client, () => PumpServer(server));
+
+        PacketReader bonusState = WaitForPacket(client, MessageType.BonusState, () => PumpServer(server));
+        int count = bonusState.ReadInt();
+
+        Assert.That(count, Is.EqualTo(12));
+        for (int i = 0; i < count; i++)
+        {
+            bonusState.ReadInt();
+            bool active = bonusState.ReadByte() != 0;
+            Vector3 position = bonusState.ReadVector3();
+
+            Assert.That(active, Is.True);
+            AssertPositionInsideArea(position, new Vector3(100f, 0f, 200f), new Vector2(30f, 40f), 0.25f);
+        }
+    }
+
+    [Test]
+    public void Server_EnforcesMinimumBonusPoolWhenSerializedTargetIsTooLow()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        int port = FindFreePort();
+        GameServer server = CreateServer(
+            port,
+            server =>
+            {
+                server.TargetActiveBonusCount = 15;
+                server.MinimumActiveBonusCount = 500;
+                server.BonusSpawnAreaCenter = new Vector3(100f, 0f, 200f);
+                server.BonusSpawnAreaSize = new Vector2(200f, 200f);
+                server.BonusSpawnHeightOffset = 0.25f;
+                server.BonusSpawnGroundLayers = 0;
+            });
+
+        using TcpClient client = ConnectRawClient(port, character: 0);
+        ReadWelcome(client, () => PumpServer(server));
+
+        PacketReader bonusState = WaitForPacket(client, MessageType.BonusState, () => PumpServer(server));
+
+        Assert.That(bonusState.ReadInt(), Is.EqualTo(500));
+    }
+
+    [Test]
+    public void Server_RandomizesSceneBonusInitialPositionsInsideMapArea()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        CreateRegisteredSceneBonus(0, new Vector3(1f, 0f, 1f));
+        int port = FindFreePort();
+        GameServer server = CreateServer(
+            port,
+            server =>
+            {
+                server.TargetActiveBonusCount = 1;
+                server.MinimumActiveBonusCount = 0;
+                server.RandomizeInitialBonusPositions = true;
+                server.BonusSpawnAreaCenter = new Vector3(100f, 0f, 200f);
+                server.BonusSpawnAreaSize = new Vector2(30f, 40f);
+                server.BonusSpawnHeightOffset = 0.25f;
+                server.BonusSpawnGroundLayers = 0;
+            });
+
+        using TcpClient client = ConnectRawClient(port, character: 0);
+        ReadWelcome(client, () => PumpServer(server));
+
+        PacketReader bonusState = WaitForPacket(client, MessageType.BonusState, () => PumpServer(server));
+        int count = bonusState.ReadInt();
+        int bonusId = bonusState.ReadInt();
+        bool active = bonusState.ReadByte() != 0;
+        Vector3 position = bonusState.ReadVector3();
+
+        Assert.That(count, Is.EqualTo(1));
+        Assert.That(bonusId, Is.EqualTo(0));
+        Assert.That(active, Is.True);
+        AssertPositionInsideArea(position, new Vector3(100f, 0f, 200f), new Vector2(30f, 40f), 0.25f);
+        Assert.That(Vector3.Distance(position, new Vector3(1f, 0f, 1f)), Is.GreaterThan(1f));
+    }
+
+    [Test]
+    public void Server_UsesTerrainBoundsWhenSpawnAreaIsNotConfigured()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        TerrainData terrainData = new TerrainData
+        {
+            heightmapResolution = 33,
+            size = new Vector3(60f, 1f, 80f),
+        };
+        terrainObject = Terrain.CreateTerrainGameObject(terrainData);
+        terrainObject.transform.position = new Vector3(10f, 0f, 20f);
+
+        int port = FindFreePort();
+        GameServer server = CreateServer(
+            port,
+            server =>
+            {
+                server.TargetActiveBonusCount = 5;
+                server.MinimumActiveBonusCount = 0;
+                server.BonusSpawnAreaSize = Vector2.zero;
+                server.BonusSpawnGroundLayers = 0;
+            });
+
+        using TcpClient client = ConnectRawClient(port, character: 0);
+        ReadWelcome(client, () => PumpServer(server));
+
+        PacketReader bonusState = WaitForPacket(client, MessageType.BonusState, () => PumpServer(server));
+        int count = bonusState.ReadInt();
+
+        Assert.That(count, Is.EqualTo(5));
+        for (int i = 0; i < count; i++)
+        {
+            bonusState.ReadInt();
+            bonusState.ReadByte();
+            Vector3 position = bonusState.ReadVector3();
+
+            AssertPositionInsideArea(position, new Vector3(40f, 0f, 60f), new Vector2(60f, 80f), 0.28f);
+        }
+    }
+
+    GameServer CreateServer(int port, Action<GameServer> configure = null)
     {
         serverObject = new GameObject("test server");
         GameServer server = serverObject.AddComponent<GameServer>();
         server.Port = port;
+        configure?.Invoke(server);
         Assert.That(server.StartServer(), Is.True);
         return server;
     }
@@ -568,6 +953,35 @@ public class NetworkDespawnTests
         prefabObject.AddComponent<NetworkPlayer>();
         client.CharacterPrefabs = new[] { prefabObject };
         return client;
+    }
+
+    Bonus CreateRegisteredBonus(GameClient client, int bonusId, Vector3 position, bool useSecondObject = false)
+    {
+        GameObject target = new GameObject("bonus " + bonusId);
+        target.transform.position = position;
+
+        if (useSecondObject)
+        {
+            secondBonusObject = target;
+        }
+        else
+        {
+            bonusObject = target;
+        }
+
+        Bonus bonus = target.AddComponent<Bonus>();
+        bonus.BonusId = bonusId;
+        client.RegisterBonus(bonus);
+        return bonus;
+    }
+
+    Bonus CreateRegisteredSceneBonus(int bonusId, Vector3 position)
+    {
+        bonusObject = new GameObject("scene bonus " + bonusId);
+        bonusObject.transform.position = position;
+        Bonus bonus = bonusObject.AddComponent<Bonus>();
+        bonus.BonusId = bonusId;
+        return bonus;
     }
 
     static TcpClient ConnectRawClient(int port, byte character, string playerName = "Player")
@@ -589,6 +1003,14 @@ public class NetworkDespawnTests
     {
         PacketReader welcome = WaitForPacket(client, MessageType.Welcome, tick);
         return welcome.ReadInt();
+    }
+
+    static void SendPickupRequest(TcpClient client, int bonusId)
+    {
+        var writer = new PacketWriter(MessageType.PickupRequest);
+        writer.WriteInt(bonusId);
+        byte[] bytes = writer.ToBytes();
+        client.GetStream().Write(bytes, 0, bytes.Length);
     }
 
     static PacketReader WaitForPacket(
@@ -636,6 +1058,13 @@ public class NetworkDespawnTests
         ClientHandleTcp.Invoke(client, new object[] { packet });
     }
 
+    static void AssertPositionInsideArea(Vector3 position, Vector3 center, Vector2 size, float expectedY)
+    {
+        Assert.That(position.x, Is.InRange(center.x - size.x * 0.5f, center.x + size.x * 0.5f));
+        Assert.That(position.z, Is.InRange(center.z - size.y * 0.5f, center.z + size.y * 0.5f));
+        Assert.That(position.y, Is.EqualTo(expectedY).Within(0.01f));
+    }
+
     static byte[] WelcomePacket(int playerId)
     {
         var writer = new PacketWriter(MessageType.Welcome);
@@ -653,12 +1082,22 @@ public class NetworkDespawnTests
         return SpawnPacket(playerId, character, Vector3.zero, 0f, playerName);
     }
 
+    static byte[] SpawnPacket(int playerId, byte character, string playerName, int score)
+    {
+        return SpawnPacket(playerId, character, Vector3.zero, 0f, playerName, score);
+    }
+
     static byte[] SpawnPacket(int playerId, byte character, Vector3 position, float yaw)
     {
         return SpawnPacket(playerId, character, position, yaw, "Player");
     }
 
     static byte[] SpawnPacket(int playerId, byte character, Vector3 position, float yaw, string playerName)
+    {
+        return SpawnPacket(playerId, character, position, yaw, playerName, 0);
+    }
+
+    static byte[] SpawnPacket(int playerId, byte character, Vector3 position, float yaw, string playerName, int score)
     {
         var writer = new PacketWriter(MessageType.Spawn);
         writer.WritePlayerState(
@@ -667,6 +1106,7 @@ public class NetworkDespawnTests
                 Id = playerId,
                 Character = character,
                 PlayerName = playerName,
+                Score = score,
                 Position = position,
                 Yaw = yaw,
             });
@@ -677,6 +1117,36 @@ public class NetworkDespawnTests
     {
         var writer = new PacketWriter(MessageType.Despawn);
         writer.WriteInt(playerId);
+        return writer.ToBytes();
+    }
+
+    static byte[] PickupAckPacket(int bonusId, int playerId, int score)
+    {
+        var writer = new PacketWriter(MessageType.PickupAck);
+        writer.WriteInt(bonusId);
+        writer.WriteInt(playerId);
+        writer.WriteInt(score);
+        return writer.ToBytes();
+    }
+
+    static byte[] BonusSpawnPacket(int bonusId, Vector3 position)
+    {
+        var writer = new PacketWriter(MessageType.BonusSpawn);
+        writer.WriteInt(bonusId);
+        writer.WriteVector3(position);
+        return writer.ToBytes();
+    }
+
+    static byte[] BonusStatePacket(params (int id, bool active, Vector3 position)[] states)
+    {
+        var writer = new PacketWriter(MessageType.BonusState);
+        writer.WriteInt(states.Length);
+        foreach ((int id, bool active, Vector3 position) in states)
+        {
+            writer.WriteInt(id);
+            writer.WriteByte(active ? (byte)1 : (byte)0);
+            writer.WriteVector3(position);
+        }
         return writer.ToBytes();
     }
 

@@ -108240,6 +108240,18 @@ MonoBehaviour:
   SnapshotsPerSecond: 20
   FullSnapshotEvery: 30
   AutoStart: 0
+  BonusRespawnDelaySeconds: 5
+  BonusSpawnPoints: []
+  TargetActiveBonusCount: 500
+  MinimumActiveBonusCount: 500
+  RandomizeInitialBonusPositions: 1
+  BonusSpawnAreaCenter: {x: 240.5, y: 0, z: 254.2}
+  BonusSpawnAreaSize: {x: 345, y: 312}
+  BonusSpawnHeightOffset: 0.28
+  BonusSpawnRaycastHeight: 50
+  BonusSpawnGroundLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!4 &1816197937
 Transform:
   m_ObjectHideFlags: 0
